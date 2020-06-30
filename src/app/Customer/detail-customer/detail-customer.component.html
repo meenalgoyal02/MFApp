@@ -1,0 +1,152 @@
+<div class="modal-dialog">
+    <div class="modal-content">
+        <form #customerForm="ngForm" (ngSubmit)="editCustomer(customerForm)">
+            <div class="modal-header">						
+                <h4 class="modal-title">
+                    <span *ngIf="isDeletePage">Delete Customer</span>
+                    <span *ngIf="!isDeletePage">Edit Customer</span>
+                </h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            </div>
+            <div class="modal-body" ngModelGroup="custData">
+                <div class="form-group">
+                        <label for="name">Name</label>
+                        <input id="name" 
+                            placeholder="Input customer name" 
+                            type="text" 
+                            name="name" 
+                            class="form-control" 
+                            disabled
+                            [(ngModel)]="currentCustomer && currentCustomer.name" 
+                            #name="ngModel"
+                            required 
+                            pattern="[a-zA-Z ]*"
+                        >
+                        <span class="help-block" *ngIf="name &&!name.valid && name.touched">Please input customer name!</span>
+                </div>					
+                <div class="form-group">
+                    <label for="alias">Alias</label>
+                    <input id="alias" 
+                    placeholder="Enter customer name shortform(alias)" 
+                    type="text" 
+                    name="alias" 
+                    class="form-control"
+                    [disabled]="!isPageEditable"
+                    [(ngModel)]="currentCustomer && currentCustomer.alias" 
+                    #alias="ngModel" 
+                    required
+                    pattern="[a-zA-Z ]*">
+                    <span class="help-block" *ngIf="isPageEditable && alias && !alias.valid && alias.touched">Please input customer alias!</span>
+                </div>
+                <div class="form-group">
+                    <label for="contactNum1" >Contact Number</label>
+                    <input type="text" id="contactNum1" placeholder="Phone number" name="contactNum1" 
+                    class="form-control" 
+                    [(ngModel)]="currentCustomer && currentCustomer.contactNum1" 
+                    [disabled]="!isPageEditable"
+                    required
+                    #contactNum1="ngModel"
+                    pattern="[0-9]*"
+                    minlength="10"
+                    maxlength="10">
+                    <span class="help-block" *ngIf="contactNum1 && !contactNum1.valid && contactNum1.touched">Please input valid phone number!</span>
+                </div>
+                <div class="form-group">
+                    <label for="loanDate">Loan start date</label>
+                    <input type="Date" 
+                    id="loanDate"
+                    name="loanDate" 
+                    class="form-control" 
+                    [ngModel]="currentCustomer && currentCustomer.loanDate | date:'yyyy-MM-dd'" 
+                    (ngModelChange)="currentCustomer && currentCustomer.loanDate=$event" 
+                    #loanDate="ngModel"
+                    [disabled]="!isPageEditable"
+                    required
+                    dateValid
+                    >
+                    <span class="help-block" *ngIf="loanDate && loanDate.touched && loanDate.errors && loanDate.errors.dateValid">Please input valid loan start date!</span>
+                </div>
+                <div class="form-group">
+                    <label for="financeAmount">Finance Amount</label>
+                    <input 
+                    type="number" 
+                    id="financeAmount" 
+                    name="financeAmount" 
+                    class="form-control" 
+                    [(ngModel)]="currentCustomer && currentCustomer.financeAmount" 
+                    [disabled]="!isPageEditable"
+                                        required 
+                    min="10">
+                </div>	
+                <div class="form-group">
+                    <label for="emiAmount">EMI Amount</label>
+                    <input 
+                    id="emiAmount" 
+                    type="number" 
+                    name="emiAmount" 
+                    class="form-control"
+                    [(ngModel)]="currentCustomer && currentCustomer.emiAmount" 
+                    [disabled]="!isPageEditable"
+                    required>
+                </div>	
+                <div class="form-group">
+                    <label for="interestAmount">Interest Amount</label>
+                    <input 
+                    id="interestAmount" 
+                    type="number" 
+                    name="interestAmount" 
+                    class="form-control" 
+                    [(ngModel)]="currentCustomer && currentCustomer.interestAmount" 
+                    [disabled]="!isPageEditable"
+                    required>
+                </div>	
+                <div class="form-group">
+                    <label for="fileCharge">File Charges</label>
+                    <input 
+                    id="fileCharge" 
+                    type="number" 
+                    name="fileCharge" 
+                    class="form-control" 
+                    [(ngModel)]="currentCustomer && currentCustomer.fileCharge"
+                    [disabled]="!isPageEditable"
+                    required>
+                </div>	
+                <div class="form-group">
+                    <label for="fileAmount">File Amount</label>
+                    <input 
+                    id="fileAmount"
+                    type="number" 
+                    name="fileAmount" 
+                    class="form-control" 
+                    [disabled]="!isPageEditable"
+                    [(ngModel)]="currentCustomer && currentCustomer.fileAmount"
+                    required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <input 
+                type="button" 
+                class="btn btn-default" 
+                data-dismiss="modal" 
+                value="Cancel">
+               
+
+                <input 
+                type="submit"
+                class="btn btn-danger"
+                value="Delete"
+                *ngIf="isDeletePage"
+                >
+
+                <input 
+                type="submit" 
+                class="btn btn-success" 
+                [value]="isPageEditable ? 'Update' : 'Edit' " 
+                [disabled]="customerForm.isTouched && !customerForm.valid"
+                *ngIf="!isDeletePage"
+                >
+               
+            </div>
+        </form>
+    </div>
+</div>

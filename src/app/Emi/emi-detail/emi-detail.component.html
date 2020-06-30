@@ -1,0 +1,90 @@
+<div class="container">
+        <div class="table-wrapper">
+            <div class="table-title">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h2>EMI Details</h2>
+                        <table class="table table-dark">
+                            <tr>
+                                <th scope="col">EMI Amount</th>
+                                <th scope="col">Last EMI Pay Date</th>
+                                <th scope="col">EMI Paid Total</th>
+                                <th scope="col">Due Date</th>
+                            </tr>
+                            <tr *ngIf="!customerEmiPayDetails">
+                                <td colspan="4">No records found!</td>
+                            </tr>
+                            <tr *ngIf="customerEmiPayDetails">
+                                <td>{{customerEmiPayDetails?.emiAmount}}</td>
+                                <td>{{customerEmiPayDetails?.emiLastPayDate|date:shortDate}}</td>
+                                <td>{{customerEmiPayDetails?.totalEmiPaid}}</td>
+                                <td>{{customerEmiPayDetails?.emiDueDate|date:shortDate}}</td>
+                            </tr>
+                        </table>
+                        <div class="col-sm-6">
+                          
+                            <form [formGroup]="emiDetailForm" (ngSubmit)="SaveEmiDetail()">
+                            <label>Due Details:</label>
+                            <div class="form-group">
+                                <label for="emiPayDate">EMI Pay Date</label>
+                                <input id="emiPayDate" 
+                                placeholder="Input Pay Date" 
+                                type="Date" 
+                                class="form-control" 
+                                formControlName="emiPayDate"
+                                required >
+                               
+                                <span class="help-block" 
+                                *ngIf="emiDetailForm.get('emiPayDate')
+                                &&!emiDetailForm.get('emiPayDate').valid 
+                                && emiDetailForm.get('emiPayDate').touched
+                                && emiDetailForm.get('emiPayDate').errors?.required">
+                                Please input last EMI pay date!</span>
+                           </div>
+                        <div class="form-group">
+                            <label for="emiAmount">EMI Amount</label>
+                            <input id="emiAmount" 
+                            placeholder="Input EMI Amount" 
+                            type="number" 
+                            class="form-control" 
+                            formControlName="emiAmount"
+                            required
+                            [ngClass]="{'is-invalid':emiAmountErrorMsg}"
+                            min="10" >                            
+
+                            <span class="help-block">{{emiAmountErrorMsg}}</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="dueStartDate">Due Start Date</label>
+                            <input id="dueStartDate" 
+                            placeholder="Input EMI due start date" 
+                            type="Date" 
+                            class="form-control" 
+                            formControlName="dueStartDate"
+                            required >
+                            
+                            <span class="help-block" 
+                            *ngIf="emiDetailForm.get('dueStartDate')
+                            &&!emiDetailForm.get('dueStartDate').valid 
+                            && emiDetailForm.get('dueStartDate').touched
+                            && emiDetailForm.get('dueStartDate').errors?.required">
+                            Please input EMI due date!</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="agentName">Agent</label>
+                            <input id="agentName"                            
+                            type="text" 
+                            class="form-control" 
+                            formControlName="agentName"
+                            required >
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" [disabled]="!emiDetailForm.valid">Submit</button>
+                        </div>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
