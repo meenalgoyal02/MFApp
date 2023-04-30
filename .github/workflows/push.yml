@@ -1,10 +1,17 @@
-name: pushAction
+name: first
 
 on: push
 
-jobs: 
-     job1:
-         name: Print Date on Ubuntu
-         runs-on: ubuntu-latest
-         steps: 
-              -name: Test step1
+jobs:
+    job1:
+        name: First Job
+        runs-on: ubuntu-latest
+        steps:
+            - name: Step one
+            - name: Step two
+    job2:
+        name: Second Job
+        runs-on: windows-latest
+        steps:
+            - name: Step one
+            - name: Step two
