@@ -5,9 +5,10 @@ on: push
 jobs:
     job1:
         name: First Job
-        runs-on: ubuntu-latest
-        run: echo date
+        runs-on: ubuntu-latest       
         steps:
             - name: Step one
+              run: echo date
             - name: Step two
+              run: echo Hi
    
