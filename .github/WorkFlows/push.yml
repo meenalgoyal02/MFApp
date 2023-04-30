@@ -1,3 +1,10 @@
-name:pushAction
+name: pushAction
+
 on: push
+
 jobs: 
+     job1:
+         name: Print Date on Ubuntu
+         runs-on: ubuntu-latest
+         run: date | echo
+
