@@ -1,0 +1,3 @@
+name:pushAction
+on: push
+jobs: 
