@@ -6,5 +6,6 @@ jobs:
      job1:
          name: Print Date on Ubuntu
          runs-on: ubuntu-latest
-         run: date | echo 
+         steps: 
+              -Test step1
 
