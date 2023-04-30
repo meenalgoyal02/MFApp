@@ -7,4 +7,4 @@ jobs:
          name: Print Date on Ubuntu
          runs-on: ubuntu-latest
          steps: 
-              -Test step1
+              -name: Test step1
