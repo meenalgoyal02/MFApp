@@ -6,12 +6,8 @@ jobs:
     job1:
         name: First Job
         runs-on: ubuntu-latest
+        run: echo date
         steps:
             - name: Step one
             - name: Step two
-    job2:
-        name: Second Job
-        runs-on: windows-latest
-        steps:
-            - name: Step one
-            - name: Step two
+   
