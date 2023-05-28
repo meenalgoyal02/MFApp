@@ -3,12 +3,11 @@ name: first
 on: push
 
 jobs:
-    job1:
-        name: First Job
-        runs-on: ubuntu-latest       
-        steps:
+    job1:   
+      runs-on: ubuntu-latest       
+      steps:
             - name: Step one
             - run: echo date
             - name: Step two
-            - run: echo Hi
+            - run: echo "Hi"
    
