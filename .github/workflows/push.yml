@@ -3,11 +3,20 @@ name: first
 on: push
 
 jobs:
-    job1:   
+    Linux:   
       runs-on: ubuntu-latest       
       steps:
       - name: Print Hi
         run: echo "Hi"
       - name: Print date
         run: date
-   
+    Windows:
+     runs-on: windows-latest
+     steps:
+     - name: Print date-windows
+       run: date
+    MacOS:
+     runs-on: macos-latest
+     steps:
+     - name: Print date-MAC OS
+       run: date
