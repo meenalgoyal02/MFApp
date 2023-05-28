@@ -6,8 +6,8 @@ jobs:
     job1:   
       runs-on: ubuntu-latest       
       steps:
-            - name: Step one
-            - run: echo date
-            - name: Step two
-            - run: echo "Hi"
+      - name: Step one
+      - run: echo date
+      - name: Step two
+      - run: echo "Hi"
    
