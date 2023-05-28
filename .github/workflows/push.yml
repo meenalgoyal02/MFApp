@@ -20,3 +20,8 @@ jobs:
      steps:
      - name: Print date-MAC OS
        run: date
+    Windows19:
+     runs-on: Windows-2019
+     steps: 
+     - name: Print on windows 2019
+       run: date
