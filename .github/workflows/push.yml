@@ -9,5 +9,5 @@ jobs:
       - name: Print Hi
         run: echo "Hi"
       - name: Print date
-        run: echo date
+        run: date
    
