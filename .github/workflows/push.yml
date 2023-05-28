@@ -21,6 +21,7 @@ jobs:
      - name: Print date-MAC OS
        run: date
     Windows19:
+     needs: [Linux,Windows]
      runs-on: Windows-2019
      steps: 
      - name: Print on windows 2019
