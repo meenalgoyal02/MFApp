@@ -27,5 +27,13 @@ jobs:
           psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME
 
       - name: Run migration script
+        env:
+          AWS_REGION: 'us-east-1'
+          RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
+          RDS_PORT: '5432'
+          RDS_USERNAME: 'postgres'
+          PGPASSWORD: '12345678'
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "create_table.sql"
