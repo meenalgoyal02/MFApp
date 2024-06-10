@@ -23,6 +23,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
+          # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb'
           psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -W $RDS_PASSWORD
 
       - name: Run migration script
