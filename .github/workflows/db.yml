@@ -28,4 +28,4 @@ jobs:
 
       - name: Run migration script
         run: |
-          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -f "create_table.sql"
+          psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "create_table.sql"
