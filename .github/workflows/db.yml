@@ -2,6 +2,15 @@ name: RDS Migration
 
 on: workflow_dispatch
 
+env:
+  AWS_REGION: 'us-east-1'
+  RDS_HOST: ${{ secrets.RDS_HOST }}
+  RDS_PORT: '5432'
+  RDS_USERNAME: 'postgres'
+  PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
 jobs:
   rds-migration:
     runs-on: ubuntu-latest
@@ -14,14 +23,6 @@ jobs:
           npm install
 
       - name: Establish RDS connection
-        env:
-          AWS_REGION: 'us-east-1'
-          RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
-          RDS_PORT: '5432'
-          RDS_USERNAME: 'postgres'
-          PGPASSWORD: '12345678'
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
           psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME
@@ -29,33 +30,18 @@ jobs:
       - name: Run migration script
         id: migration_script
         continue-on-error: true 
-        env:
-          AWS_REGION: 'us-east-1'
-          RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
-          RDS_PORT: '5432'
-          RDS_USERNAME: 'postgres'
-          PGPASSWORD: '12345678'
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "create_table.sql"
+      
       - name: Rollback script
         if: steps.migration_script.outcome == 'failure'
         run: |
-         psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME rollback
-        env:
-            AWS_REGION: 'us-east-1'
-            RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
-            RDS_PORT: '5432'
-            RDS_USERNAME: 'postgres'
-            PGPASSWORD: '12345678'
+         psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME 
+         rollback;
+        
       - name: Commit script
         if: steps.migration_script.outcome == 'success'
         run: |
-         psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME commit
-        env:
-          AWS_REGION: 'us-east-1'
-          RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
-          RDS_PORT: '5432'
-          RDS_USERNAME: 'postgres'
-          PGPASSWORD: '12345678'
+         psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME 
+         commit;
+      
