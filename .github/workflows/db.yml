@@ -27,6 +27,7 @@ jobs:
           psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME
 
       - name: Run migration script
+        id: migration_script
         continue-on-error: true 
         env:
           AWS_REGION: 'us-east-1'
@@ -39,7 +40,7 @@ jobs:
         run: |
           psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "create_table.sql"
       - name: Rollback script
-        if: steps.runmigrationscript.outcome == 'failure'
+        if: steps.migration_script.outcome == 'failure'
         run: |
          psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME rollback
         env:
@@ -49,7 +50,7 @@ jobs:
             RDS_USERNAME: 'postgres'
             PGPASSWORD: '12345678'
       - name: Commit script
-        if: steps.runmigrationscript.outcome == 'success'
+        if: steps.migration_script.outcome == 'success'
         run: |
          psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME commit
         env:
