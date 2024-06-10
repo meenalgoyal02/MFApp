@@ -21,7 +21,7 @@ jobs:
           RDS_USERNAME: 'postgres'
           RDS_PASSWORD: '12345678'
         run: |
-          aws rds describe-db-instances --region $AWS_REGION --query 'DBInstances[]|{DBInstanceIdentifier}' --output text | grep -oE 'your-rds-instance'
+          aws rds describe-db-instances --region $AWS_REGION --query 'DBInstances[]|{pocdb}' --output text | grep -oE 'pocdb'
           psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -W $RDS_PASSWORD
 
       - name: Run migration script
