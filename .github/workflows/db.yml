@@ -1,0 +1,39 @@
+name: RDS Migration
+
+on: workflow_dispatch
+
+jobs:
+  rds-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          npm install
+
+      - name: Establish RDS connection
+        env:
+          AWS_REGION: 'us-east-1'
+          RDS_HOST: 'pocdb.ciwtq0frolty.us-east-1.rds.amazonaws.com'
+          RDS_PORT: '5432'
+          RDS_USERNAME: 'postgres'
+          RDS_PASSWORD: '12345678'
+        run: |
+          aws rds describe-db-instances --region $AWS_REGION --query 'DBInstances[]|{DBInstanceIdentifier}' --output text | grep -oE 'your-rds-instance'
+          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -W $RDS_PASSWORD
+
+      - name: Run migration script
+        run: |
+          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -W $RDS_PASSWORD -f "CREATE TABLE students (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100),
+            age INTEGER
+          );
+          
+          INSERT INTO students (name, age) VALUES
+            ('Meenal', 40),
+            ('Ali', 28),
+            ('Teoh', 18);
+          "
