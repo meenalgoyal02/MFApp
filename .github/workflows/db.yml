@@ -40,9 +40,21 @@ jobs:
           psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "create_table.sql"
       - name: Rollback script
         if: steps.runmigrationscript.outcome == 'failure'
-        run:
-          psql rollback
+        run: |
+         psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME rollback
+        env:
+            AWS_REGION: 'us-east-1'
+            RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
+            RDS_PORT: '5432'
+            RDS_USERNAME: 'postgres'
+            PGPASSWORD: '12345678'
       - name: Commit script
         if: steps.runmigrationscript.outcome == 'success'
-        run: 
-          psql commit
+        run: |
+         psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME commit
+        env:
+          AWS_REGION: 'us-east-1'
+          RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
+          RDS_PORT: '5432'
+          RDS_USERNAME: 'postgres'
+          PGPASSWORD: '12345678'
