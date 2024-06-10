@@ -19,16 +19,16 @@ jobs:
           RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
           RDS_PORT: '5432'
           RDS_USERNAME: 'postgres'
-          RDS_PASSWORD: '12345678'
+          PGPASSWORD: '12345678'
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
-          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -W $RDS_PASSWORD
+          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME
 
       - name: Run migration script
         run: |
-          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -W $RDS_PASSWORD -f "CREATE TABLE students (
+          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -f "CREATE TABLE students (
             id SERIAL PRIMARY KEY,
             name VARCHAR(100),
             age INTEGER
