@@ -30,17 +30,17 @@ jobs:
 
       - name: Iterate through Migration folder
         run: |
-          # Check if the target is not a directory
-          if [ ! -d "$MIGRATION_FOLDER" ]; then
-            exit 1
-          fi
+          # # Check if the target is not a directory
+          # if [ ! -d "$MIGRATION_FOLDER" ]; then
+          #   exit 1
+          # fi
           
-          # # Loop through files in the target directory
-          # for file in "$MIGRATION_FOLDER"/*; do
-          #   if [ -f "$file" ]; then
-          #     echo "$file"
-          #   fi
-          # done
+          # Loop through files in the target directory
+          for file in "$MIGRATION_FOLDER"/*; do
+            if [ -f "$file" ]; then
+              echo "$file"
+            fi
+          done          
 
       - name: Run migration script
         id: migration_script
