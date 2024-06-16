@@ -1,4 +1,4 @@
-name: Run AWS CLI commands
+name: Simulate disaster in specified region.
 on: workflow_dispatch
   
 jobs:
