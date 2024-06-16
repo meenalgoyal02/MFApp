@@ -1,0 +1,20 @@
+name: Run AWS CLI commands
+on: workflow_dispatch
+  
+jobs:
+    aws-cli-in-github-actions:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.10'
+        - name: Install dependencies
+          run: |
+            python -m pip install --upgrade pip
+            pip install awscli
+        - run: |
+           aws autoscaling update-auto-scaling-group --auto-scaling-group-name "awseb-e-vbcq63izf3-stack-AWSEBAutoScalingGroup-A66XCYUCCPXP" --desired-capacity 0 --min-size 0 --max-size 0 --region us-east-1
+          env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
