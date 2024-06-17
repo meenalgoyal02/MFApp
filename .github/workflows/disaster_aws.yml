@@ -30,8 +30,9 @@ jobs:
            echo "Instance state: $INSTANCE_STATE"
            echo "::set-output name=instance_state::$INSTANCE_STATE"
            echo "${{steps.ec2-status.instance_state}}"
+        
         - name: Set instance state in alternate region
-          id: route53-reset-weight
+          id: disaster-recovery
           if: ${{steps.ec2-status.instance_state}} == 'running' 
           run: |
            # aws autoscaling update-auto-scaling-group --auto-scaling-group-name "awseb-e-vbcq63izf3-stack-AWSEBAutoScalingGroup-A66XCYUCCPXP" --desired-capacity 0 --min-size 0 --max-size 0 --region us-east-1
@@ -40,7 +41,13 @@ jobs:
             \"ResourceRecordSet\": {\"Name\": \"primary.srepoc.com\", \"Type\": \"CNAME\", \"SetIdentifier\": \"ec2-us-east-2\",\"Weight\": 50,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\"[primary.srepoc.com]\"}]  }}]}"|jq -r '.ChangeInfo.Status')
             echo "change state: $CHANGE_STATE"
             echo "::set-output name=change_state::$CHANGE_STATE"
-            echo "${{steps.route53-reset-weight.change_state}}"
+            echo "${{steps.disaster-recovery.change_state}}"
+
+        - name: Set primary region CNAME weight to 0
+          if: ${{steps.disaster-recovery.change_state}} =='PENDING'
+          run: |
+               aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "{ \"Comment\": \"Changes weights of ACTIVE region from 100 to 0\",\"Changes\": [{ \"Action\": \"UPSERT\",
+               \"ResourceRecordSet\": {\"Name\": \"primary.srepoc.com\", \"Type\": \"CNAME\", \"SetIdentifier\": \"ec2\",\"Weight\": 0,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\"[primary.srepoc.com]\"}]  }}]}"
         
 
           
