@@ -48,7 +48,7 @@ jobs:
         - name: Wait for Route53 Change to Become INSYNC
           id: wait-for-insync
           run: |
-              CHANGE_ID=${{ steps.change-record.outputs.change_id }}
+              CHANGE_ID=${{ steps.disaster-recovery.outputs.change_id }}
               STATUS="PENDING"
               while [ "$STATUS" != "INSYNC" ]; do
                 echo "Waiting for change $CHANGE_ID to become INSYNC..."
