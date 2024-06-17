@@ -26,7 +26,7 @@ jobs:
         - name: Retrieve instance status
           id: ec2-status
           run: |
-           INSTANCE_STATE=$(aws ec2 describe-instance-status --instance-ids $EC2_ID --include-all-instance --region $AWS_SECONDARY_REGION | jq -r '.InstanceStatuses[0].InstanceState.Name') 
+           INSTANCE_STATE=$(aws ec2 describe-instance-status --instance-ids $SECONDARY_EC2_ID --include-all-instance --region $AWS_SECONDARY_REGION | jq -r '.InstanceStatuses[0].InstanceState.Name') 
            echo "Instance state: $INSTANCE_STATE"
            echo "::set-output name=instance_state::$INSTANCE_STATE"
            echo "${{steps.ec2-status.instance_state}}"
