@@ -25,8 +25,8 @@ jobs:
         - name: Retrieve instance status
           id: ec2-status
           run: |
-           INSTANCE_STATES = aws ec2 describe-instance-status --instance-ids $EC2_ID --include-all-instance --region $AWS_SECONDARY_REGION | jq -r '.InstanceStatuses[0].InstanceState.Name' 
-           echo "::set-output name=instance_state::$INSTANCE_STATE"
+            aws ec2 describe-instance-status --instance-ids $EC2_ID --include-all-instance --region $AWS_SECONDARY_REGION | jq -r '.InstanceStatuses[0].InstanceState.Name' 
+          # echo "::set-output name=instance_state::$INSTANCE_STATE"
         - name: Set instance state in alternate region
           id: ec2-reset-status
           if: steps.ec2-status.instance_state == 'running' 
