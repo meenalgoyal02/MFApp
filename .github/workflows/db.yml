@@ -65,7 +65,18 @@ jobs:
           # done
 
           # Convert scriptFileHash to JSON string
-          hashmap_json=$(jq -n --argjson obj "$(declare -p scriptFileHash | cut -d' ' -f 3-)" '$obj | from_entries')
+          # Convert hashmap to JSON string manually
+          hashmap_json="{"
+          first=true
+          for key in "${!scriptFileHash[@]}"; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              hashmap_json+=","
+            fi
+            hashmap_json+="\"$key\":\"${hashmap[$key]}\""
+          done
+          hashmap_json+="}"
           
           # Set the output
           echo "::set-output name=scriptFileHash::$hashmap_json"
