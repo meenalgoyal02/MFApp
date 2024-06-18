@@ -36,11 +36,12 @@ jobs:
           shopt -s dotglob
 
           for file in $(ls "$MIGRATION_FOLDER"); do
-            if [ -f "$file" ]; then
+            echo "File name:$file"
+            #if [ -f "$file" ]; then
               scriptFiles=(${scriptFiles[@]} "$file")
               IFS='_' read -ra splitName <<< "$file"
               scriptFileHash["${splitName[0]}"]="${file}"
-            fi
+           # fi
           done
 
           #output the hashed set from the step.
