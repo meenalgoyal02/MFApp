@@ -84,7 +84,7 @@ jobs:
       - name: Get script file name with succeeding version number
         id: scripts_required_to_run
         run: |
-           echo "$steps.filename_read.scriptFileHash"
+           echo "${steps.filename_read.scriptFileHash}"
           #  for key in "${!steps.filename_read.sorted_hashset[@]}"; do
           #     if(($key>=$MIGRATION_HISTORY_VERSION)); then 
           #       echo "yes"
