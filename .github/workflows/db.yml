@@ -13,37 +13,65 @@ env:
   MIGRATION_FOLDER: 'src/migrations/ddl'
 
 jobs:
-  rds-migration:
+  migration-required-or-not:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install dependencies
-        run: |
-          npm install
+      # - name: Install dependencies
+      #   run: |
+      #     npm install
 
-      # - name: Establish RDS connection
+      # - name: Get migration history version
       #   run: |
       #     # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
-      #     psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME
+      #     psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME     
 
-      - name: Run migration script
-        id: migration_script
-        continue-on-error: true 
+      - name: Get all the scripts from configured folder
+        id: filename_read
         run: |
-          # Check if the target is not a directory
-          if [ ! -d "$MIGRATION_FOLDER" ]; then
-            exit 1
-          fi
-          
-          # Loop through files in the target directory
+          declare -a scriptFiles
+          declare -A scriptFileHash
+          shopt -s dotglob
+
           for file in "$MIGRATION_FOLDER"/*; do
             if [ -f "$file" ]; then
-              echo "$file"
-              psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"
+              scriptFiles=(${scriptFiles[@]} "$file")
+              IFS='_' read -ra splitName <<< "$file"
+              scriptFileHash["${splitName[0]}"]="${file}"
             fi
-          done          
+          done
+
+          #output the hashed set from the step.
+          sorted_keys=($(for key in "${!scriptFileHash[@]}"; do echo "$key"; done | sort))
+
+          echo "Sorted hashtable contents:"
+          for key in "${sorted_keys[@]}"; do
+              value=${scriptFileHash[$key]}
+              echo "Key: $key, Value: $value"
+          done
+
+      # - name: Get script file name with succeeding version number
+      #   id: scripts_required_to_run
+      #     run: |
+
+      # - name: Run migration script
+      #   id: migration_script
+      #   continue-on-error: true 
+      #   run: |
+      #     # Check if the target is not a directory
+      #     if [ ! -d "$MIGRATION_FOLDER" ]; then
+      #       exit 1
+      #     fi
+          
+      #     # Loop through files in the target directory
+      #     for file in "$MIGRATION_FOLDER"/*; do
+      #       if [ -f "$file" ]; then
+      #         echo "$file"
+      #         psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"
+      #       fi
+      #     done          
       
       # - name: Rollback script
       #   if: steps.migration_script.outcome == 'failure'
