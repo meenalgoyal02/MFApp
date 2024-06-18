@@ -91,6 +91,7 @@ jobs:
            # Access the hashmap JSON string
            hashmap_json="${{ steps.filename_read.outputs.scriptFileHash }}"
 
+           echo "Before eval"
            eval "$(echo "$hashmap_json" | jq -r 'to_entries | .[] | .key + "=\"" + .value + "\""' | while read -r line; do echo "hashmap[$line]"; done)"
           
             echo "${hashmap[@]}"
