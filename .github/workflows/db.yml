@@ -35,7 +35,7 @@ jobs:
           declare -A scriptFileHash
           shopt -s dotglob
 
-          for file in "$MIGRATION_FOLDER"/*; do
+          for file in $(ls "$MIGRATION_FOLDER"); do
             if [ -f "$file" ]; then
               scriptFiles=(${scriptFiles[@]} "$file")
               IFS='_' read -ra splitName <<< "$file"
