@@ -78,6 +78,8 @@ jobs:
           done
           hashmap_json+="}"
           
+          echo "$hashmap_json"
+          
           # Set the output
           echo "::set-output name=scriptFileHash::$hashmap_json"
 
