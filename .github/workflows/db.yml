@@ -11,6 +11,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   MIGRATION_FOLDER: 'src/migrations/ddl'
+  MIGRATION_HISTORY_VERSION: '1'
 
 jobs:
   migration-required-or-not:
@@ -37,11 +38,9 @@ jobs:
 
           for file in $(ls "$MIGRATION_FOLDER"); do
             echo "File name:$file"
-            #if [ -f "$file" ]; then
-              scriptFiles=(${scriptFiles[@]} "$file")
-              IFS='_' read -ra splitName <<< "$file"
-              scriptFileHash["${splitName[0]}"]="${file}"
-           # fi
+            scriptFiles=(${scriptFiles[@]} "$file")
+            IFS='_' read -ra splitName <<< "$file"
+            scriptFileHash["${splitName[0]}"]="${file}"          
           done
 
           #output the hashed set from the step.
@@ -53,9 +52,19 @@ jobs:
               echo "Key: $key, Value: $value"
           done
 
-      # - name: Get script file name with succeeding version number
-      #   id: scripts_required_to_run
-      #     run: |
+          echo "::set-output name=sorted_hashset::$scriptFileHash"
+
+      - name: Get script file name with succeeding version number
+        id: scripts_required_to_run
+        run: |
+           echo "${steps.filename_read.sorted_hashset[@]}"
+           for key in "${!steps.filename_read.sorted_hashset[@]}"; do
+              if(($key>=$MIGRATION_HISTORY_VERSION)); then 
+                echo "yes"
+                break;
+              fi
+           done
+
 
       # - name: Run migration script
       #   id: migration_script
