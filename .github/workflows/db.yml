@@ -86,18 +86,23 @@ jobs:
       - name: Get script file name with succeeding version number
         id: scripts_required_to_run
         run: |
-           declare -A hashmap
+            declare -A hashmap
             echo "${{steps.filename_read.outputs.scriptFileHash}}"
-           # Access the hashmap JSON string
-           hashmap_json="${{ steps.filename_read.outputs.scriptFileHash }}"
+            # Access the hashmap JSON string
+            hashmap_json="${{ steps.filename_read.outputs.scriptFileHash }}"
 
-           eval "$(echo "$hashmap_json" | jq -r 'to_entries | .[] | .key + "=\"" + .value + "\""' | while read -r line; do echo "hashmap[$line]"; done)"
+            echo "Before eval"
+            # Deserialize JSON to an associative array
+           
+            while IFS="=" read -r key value; do
+              hashmap["$key"]="$value"
+            done < <(echo "$hashmap_json" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
           
             echo "${hashmap[@]}"
 
-           for key in "${!hashmap[@]}"; do
-             echo "Key: $key, Value: ${hashmap[$key]}"
-           done
+            for key in "${!hashmap[@]}"; do
+              echo "Key: $key, Value: ${hashmap[$key]}"
+            done
           #  for key in "${!steps.filename_read.sorted_hashset[@]}"; do
           #     if(($key>=$MIGRATION_HISTORY_VERSION)); then 
           #       echo "yes"
