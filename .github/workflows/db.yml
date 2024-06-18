@@ -87,7 +87,7 @@ jobs:
         id: scripts_required_to_run
         run: |
           declare -A hashmap
-           # echo "${steps.filename_read.scriptFileHash}"
+            echo "${{steps.filename_read.scriptFileHash}}"
            # Access the hashmap JSON string
            hashmap_json="${{ steps.filename_read.scriptFileHash }}"
 
