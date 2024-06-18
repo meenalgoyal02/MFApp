@@ -74,12 +74,12 @@ jobs:
             else
               hashmap_json+=","
             fi
-            hashmap_json+="\"$key\":\"${hashmap[$key]}\""
+            hashmap_json+="\"$key\":\"${scriptFileHash[$key]}\""
           done
           hashmap_json+="}"
           
           echo "$hashmap_json"
-          
+
           # Set the output
           echo "::set-output name=scriptFileHash::$hashmap_json"
 
