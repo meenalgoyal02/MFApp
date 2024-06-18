@@ -86,10 +86,10 @@ jobs:
       - name: Get script file name with succeeding version number
         id: scripts_required_to_run
         run: |
-          declare -A hashmap
-            echo "${{steps.filename_read.scriptFileHash}}"
+           declare -A hashmap
+            echo "${{steps.filename_read.outputs.scriptFileHash}}"
            # Access the hashmap JSON string
-           hashmap_json="${{ steps.filename_read.scriptFileHash }}"
+           hashmap_json="${{ steps.filename_read.outputs.scriptFileHash }}"
 
            eval "$(echo "$hashmap_json" | jq -r 'to_entries | .[] | .key + "=\"" + .value + "\""' | while read -r line; do echo "hashmap[$line]"; done)"
           
