@@ -43,27 +43,43 @@ jobs:
             scriptFileHash["${splitName[0]}"]="${file}"          
           done
 
+          # Get script file name with succeeding version number
+          for key in "${!scriptFileHash[@]}"; do             
+              if(($key>=$MIGRATION_HISTORY_VERSION)); then 
+                echo "File name is:${scriptFileHash[$key]}"                
+                break;
+              fi
+           done
+
           #output the hashed set from the step.
-          sorted_keys=($(for key in "${!scriptFileHash[@]}"; do echo "$key"; done | sort))
+          # sorted_keys=($(for key in "${!scriptFileHash[@]}"; do echo "$key"; done | sort))
 
-          echo "Sorted hashtable contents:"
-          for key in "${sorted_keys[@]}"; do
-              value=${scriptFileHash[$key]}
-              echo "Key: $key, Value: $value"
-          done
+          # echo "Sorted hashtable contents:"
+          # for key in "${sorted_keys[@]}"; do
+          #   if(($key>=$MIGRATION_HISTORY_VERSION)); then 
+          #     echo "yes"
+          #     break;
+          #   fi
+          #     value=${scriptFileHash[$key]}
+          #     echo "Key: $key, Value: $value"
+          # done
 
-          echo "::set-output name=sorted_hashset::$scriptFileHash"
+          # Convert scriptFileHash to JSON string
+          hashmap_json=$(jq -n --argjson obj "$(declare -p scriptFileHash | cut -d' ' -f 3-)" '$obj | from_entries')
+          
+          # Set the output
+          echo "::set-output name=scriptFileHash::$hashmap_json"
 
       - name: Get script file name with succeeding version number
         id: scripts_required_to_run
         run: |
-           echo "${steps.filename_read.sorted_hashset[@]}"
-           for key in "${!steps.filename_read.sorted_hashset[@]}"; do
-              if(($key>=$MIGRATION_HISTORY_VERSION)); then 
-                echo "yes"
-                break;
-              fi
-           done
+           echo "$steps.filename_read.scriptFileHash"
+          #  for key in "${!steps.filename_read.sorted_hashset[@]}"; do
+          #     if(($key>=$MIGRATION_HISTORY_VERSION)); then 
+          #       echo "yes"
+          #       break;
+          #     fi
+          #  done
 
 
       # - name: Run migration script
