@@ -77,10 +77,11 @@ jobs:
           echo "scriptFileHash=$hashmap_json">> "$GITHUB_OUTPUT"    
  
   script-validation-on-shadow-db:
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     needs: migration-required-or-not
     if: ${{needs.migration-required-or-not.outputs.dbUpdateRequired=='true'}}
     steps: 
+       
       - name: Sort all the script filenames in order        
         id: scripts_required_to_run
         run: |
