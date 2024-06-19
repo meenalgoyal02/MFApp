@@ -95,9 +95,13 @@ jobs:
             # Deserialize JSON to an associative array
            
             while IFS="=" read -r key value; do
+              key="${key%\"}"
+              key="${key#\"}"
+              value="${value%\"}"
+              value="${value#\"}"
               hashmap["$key"]="$value"
             done < <(echo "$hashmap_json" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
-          
+         
             echo "${hashmap[@]}"
 
             for key in "${!hashmap[@]}"; do
