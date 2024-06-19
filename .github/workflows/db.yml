@@ -95,9 +95,11 @@ jobs:
             echo "Before eval"
             # Deserialize JSON to an associative array
             IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
+            
 
             for key in ${tempArray[@]}; do
-                i=$((i + 1))            
+                i=$((i + 1))  
+              echo "${key}"          
               if [ $(($i%2)) == 0 ]; then 
                  echo "tempKey: ${tempKey}, Value:${key}"                       
                  hashmap["${tempkey}"]="${key}"          
