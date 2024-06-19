@@ -97,21 +97,21 @@ jobs:
            
             IFS=':,' read -ra tempArray <<< "$hashmap_json"
             i=0
-            echo "${tempArray[@]}"
+            echo "${i}"
+            i = $(($i + 1 ))
+            echo "${i}"
 
-            
-
-            for key in ${tempArray[@]}; do
-                i = $(($i + 1 ))
+            # for key in ${tempArray[@]}; do
+            #     i = $(($i + 1 ))
                             
-              if [ $(($i%2)) == 0 ]; then 
-                 echo "Value of index:${i}"       
-                 hashmap["${tempkey}"]="${key}"          
-              else
-                echo "Value of odd index:${i}"
-                 tempkey="${key}"
-              fi
-            done
+            #   if [ $(($i%2)) == 0 ]; then 
+            #      echo "Value of index:${i}"       
+            #      hashmap["${tempkey}"]="${key}"          
+            #   else
+            #     echo "Value of odd index:${i}"
+            #      tempkey="${key}"
+            #   fi
+            # done
             
             echo "${hashmap[@]}"
 
