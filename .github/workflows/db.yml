@@ -99,12 +99,11 @@ jobs:
 
             for key in ${tempArray[@]}; do
                 i=$((i + 1))  
-              #echo "${key}" 
-              echo "${tempArray[$i]}"         
+                   
               if [ $(($i%2)) == 0 ]; then 
                                         
                  hashmap["${tempArray[$((i-1))]}"]="${key}"    
-                    
+                 echo "${tempArray[$((i-1))]}"     
               else
                  
                  tempkey="${key}"
@@ -112,6 +111,7 @@ jobs:
               fi
             done
             
+          
             echo "${hashmap[@]}"
 
             # for key in "${!hashmap[@]}"; do
