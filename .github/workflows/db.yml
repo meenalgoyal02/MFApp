@@ -160,12 +160,15 @@ jobs:
                 psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file"
             done
 
+            # run incremental scripts on Prod db.
+            for key in "${!hashmap[@]}"; do             
+            if(($key>=$MIGRATION_HISTORY_VERSION)); then 
+              file="${MIGRATION_FOLDER}/${value}"
+              export PGPASSWORD=$PGPASSWORD
+              psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
+            fi
+            done
 
-      #- name: run all the scripts of above step in the same order
-
-      
-      
-            
           #  for key in "${!steps.filename_read.sorted_hashset[@]}"; do
           #     if(($key>=$MIGRATION_HISTORY_VERSION)); then 
           #       echo "yes"
@@ -191,16 +194,6 @@ jobs:
       #       fi
       #     done          
       
-      # - name: Rollback script
-      #   if: steps.migration_script.outcome == 'failure'
-      #   run: |
-      #    psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME 
-      #    rollback;
-        
-      # - name: Commit script
-      #   if: steps.migration_script.outcome == 'success'
-      #   run: |
-      #    psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME 
-      #    commit;
+
        
    
