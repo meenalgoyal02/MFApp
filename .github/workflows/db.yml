@@ -150,6 +150,7 @@ jobs:
             #output the hashed set from the step.
             sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
 
+            can_run_on_prod=true
             # echo "Sorted hashtable contents:"
             for key in "${sorted_keys[@]}"; do              
                 value=${hashmap[$key]}
@@ -157,21 +158,28 @@ jobs:
                 echo "Key: $key, Value: $value,File path:$file"
 
                 export PGPASSWORD=postgres
-                psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file"
+                query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file")
+                if($query_output| grep -q "ERROR")
+                  can_run_on_prod=false
+                  echo "Error in script execution. Can not run on Prod."
+                  break;
+                fi
             done
 
-            echo "Running scripts on Prod"
-            # run incremental scripts on Prod db.
-            for key in "${!hashmap[@]}"; do             
-            if(($key>$MIGRATION_HISTORY_VERSION)); then 
-              
-              file="${MIGRATION_FOLDER}/${hashmap[$key]}"
-              export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
 
-              psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
+            if [ "$can_run_on_prod" = true ]; then
+              echo "Running scripts on Prod"
+              # run incremental scripts on Prod db.
+              for key in "${!hashmap[@]}"; do             
+              if(($key>$MIGRATION_HISTORY_VERSION)); then 
+                
+                file="${MIGRATION_FOLDER}/${hashmap[$key]}"
+                export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+
+                psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
+              fi
+              done
             fi
-            done
-
           #  for key in "${!steps.filename_read.sorted_hashset[@]}"; do
           #     if(($key>=$MIGRATION_HISTORY_VERSION)); then 
           #       echo "yes"
