@@ -101,7 +101,7 @@ jobs:
 
             for key in ${tempArray[@]}; do
                $i=$i+1              
-              if[$(($i%2)) == 0]; then 
+              if[$(($i%2)) == 0] then 
                  hashmap["${tempKey}"]="${key}"
               else
                 $tempkey="${key}"
