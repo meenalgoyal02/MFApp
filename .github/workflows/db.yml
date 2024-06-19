@@ -73,8 +73,8 @@ jobs:
           echo "$hashmap_json"
 
           # Set the output
-          echo "dbUpdateRequired=$db_updateRequired" >> "$GITHUB_OUTPUT
-          echo "scriptFileHash=$hashmap_json">> "$GITHUB_OUTPUT    
+          echo "dbUpdateRequired=$db_updateRequired" >> "$GITHUB_OUTPUT"
+          echo "scriptFileHash=$hashmap_json">> "$GITHUB_OUTPUT"    
  
   script-validation-on-shadow-db:
     runs-on: ubuntu
