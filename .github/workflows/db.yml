@@ -23,14 +23,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # - name: Install dependencies
-      #   run: |
-      #     npm install
+      - name: Install dependencies
+        run: |
+          npm install
 
-      # - name: Get migration history version
-      #   run: |
-      #     # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
-      #     psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME     
+      - name: Get migration history version
+        run: |
+          # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
+          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME     
 
       - name: Get all the scripts from configured folder
         id: filename_read
@@ -163,8 +163,10 @@ jobs:
             # run incremental scripts on Prod db.
             for key in "${!hashmap[@]}"; do             
             if(($key>=$MIGRATION_HISTORY_VERSION)); then 
-              file="${MIGRATION_FOLDER}/${value}"
-              export PGPASSWORD=$PGPASSWORD
+              
+              file="${MIGRATION_FOLDER}/${hashmap[$key]}"
+              export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+
               psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
             fi
             done
