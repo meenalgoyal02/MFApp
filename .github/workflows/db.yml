@@ -96,10 +96,10 @@ jobs:
             # Deserialize JSON to an associative array
            
             IFS=':,' read -ra tempArray <<< "$hashmap_json"
-            i=0
+            num=0
           
-            i = $(($i + 1 ))
-            echo "Hello: $i"
+            num = $(($num + 1 ))
+            echo "Hello: $num"
 
             # for key in ${tempArray[@]}; do
             #     i = $(($i + 1 ))
