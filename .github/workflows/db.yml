@@ -97,7 +97,8 @@ jobs:
             IFS=':,' read -ra tempArray <<< "$hashmap_json"           
 
             for key in ${tempArray[@]}; do
-                i =$((i + 1 ))
+                i=$((i + 1))
+                #i=$((i + 1))
                             
               if [ $(($i%2)) == 0 ]; then 
                  echo "Value of index:${i}"       
