@@ -105,8 +105,6 @@ jobs:
                  echo "tempKey: ${tempKey}"
                  tempkey="${key}"
               fi
-
-              echo "tempKey: ${tempKey}, Value:${key}"
             done
             
             echo "${hashmap[@]}"
