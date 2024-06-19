@@ -9,3 +9,4 @@ INSERT INTO class (name) VALUES
   ('First'),
   ('Second'),
   ('Third');
+
