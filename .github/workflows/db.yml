@@ -102,11 +102,10 @@ jobs:
             for key in ${tempArray[@]}; do
                 i=$i+1              
               if[$(($i%2)) == 0] then 
-                 echo "Value of index:${i}"
-                 #hashmap["${tempKey}"]="${key}"
+                 echo "Value of index:${i}"                 
               else
                 echo "Value of odd index:${i}"
-                 #tempkey="${key}"
+                 tempkey="${key}"
               fi
             done
             
