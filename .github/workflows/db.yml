@@ -106,7 +106,7 @@ jobs:
                  echo "tempKey: ${tempKey}, Value:${key}"      
               else
                  
-                 tempkey=${key}
+                 tempkey=$key
                  echo "tempKey: ${tempKey}"
               fi
             done
