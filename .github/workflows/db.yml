@@ -87,7 +87,7 @@ jobs:
         id: scripts_required_to_run
         run: |
             declare -A hashmap
-            declare -A tempArray
+            
             echo "${{steps.filename_read.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
             hashmap_json=${{ steps.filename_read.outputs.scriptFileHash }}
