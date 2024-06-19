@@ -101,11 +101,13 @@ jobs:
                 i=$((i + 1))  
               echo "${key}"          
               if [ $(($i%2)) == 0 ]; then 
-                 echo "tempKey: ${tempKey}, Value:${key}"                       
-                 hashmap["${tempkey}"]="${key}"          
+                                        
+                 hashmap["${tempkey}"]="${key}"    
+                 echo "tempKey: ${tempKey}, Value:${key}"      
               else
-                 echo "tempKey: ${tempKey}"
+                 
                  tempkey="${key}"
+                 echo "tempKey: ${tempKey}"
               fi
             done
             
