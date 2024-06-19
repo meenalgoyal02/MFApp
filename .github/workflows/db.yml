@@ -97,9 +97,9 @@ jobs:
            
             IFS=':,' read -ra tempArray <<< "$hashmap_json"
             i=0
-            echo "$i"
+          
             i = $(($i + 1 ))
-            echo $i
+            echo "Hello: $i"
 
             # for key in ${tempArray[@]}; do
             #     i = $(($i + 1 ))
