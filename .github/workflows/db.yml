@@ -100,8 +100,8 @@ jobs:
             echo "${tempArray[@]}"
 
             for key in ${tempArray[@]}; do
-              # $i=$i+1              
-              if[$(($i%2)) -eq 0]; then 
+               $i=$i+1              
+              if[$(($i%2)) == 0]; then 
                  hashmap["${tempKey}"]="${key}"
               else
                 $tempkey="${key}"
