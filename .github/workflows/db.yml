@@ -103,12 +103,12 @@ jobs:
               echo "${tempArray[$i]}"         
               if [ $(($i%2)) == 0 ]; then 
                                         
-                 hashmap["${tempkey}"]="${key}"    
-                 echo "tempKey: ${tempKey}, Value:${key}"      
+                 hashmap["${tempArray[$((i-1))]}"]="${key}"    
+                    
               else
                  
                  tempkey="${key}"
-                 echo $tempKey
+                 
               fi
             done
             
