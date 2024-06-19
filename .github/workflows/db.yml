@@ -87,7 +87,7 @@ jobs:
         id: scripts_required_to_run
         run: |
             declare -A hashmap
-            num=10
+            num=0
             numeric_variable=10
             echo "The value of the numeric variable is: $num"
 
