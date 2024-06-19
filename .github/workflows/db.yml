@@ -1,6 +1,6 @@
 name: RDS Migration
 
-on: workflow_dispatch
+on: push
 
 env:
   AWS_REGION: 'us-east-1'
@@ -101,7 +101,7 @@ jobs:
 
             for key in ${tempArray[@]}; do
                 i=$i+1              
-              if [ $(($i%2)) == 0 ] then 
+              if [ $(($i%2)) == 0 ]; then 
                  echo "Value of index:${i}"       
                  hashmap["${tempkey}"]="${key}"          
               else
