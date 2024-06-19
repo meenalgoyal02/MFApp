@@ -107,7 +107,7 @@ jobs:
               else
                  
                  tempkey=$key
-                 echo "tempKey: ${tempKey}"
+                 echo $tempKey
               fi
             done
             
