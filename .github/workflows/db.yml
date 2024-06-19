@@ -87,32 +87,26 @@ jobs:
         id: scripts_required_to_run
         run: |
             declare -A hashmap
-            num=0
-            num=$((num + 1))
-            #num = $((num + 1 ))
-            
-            echo "The value of the numeric variable is: $num"
-
+            i=0
             echo "${{steps.filename_read.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
             hashmap_json=${{ steps.filename_read.outputs.scriptFileHash }}
 
             echo "Before eval"
             # Deserialize JSON to an associative array
-           
             IFS=':,' read -ra tempArray <<< "$hashmap_json"           
 
-            # for key in ${tempArray[@]}; do
-            #     i = $(($i + 1 ))
+            for key in ${tempArray[@]}; do
+                i =$((i + 1 ))
                             
-            #   if [ $(($i%2)) == 0 ]; then 
-            #      echo "Value of index:${i}"       
-            #      hashmap["${tempkey}"]="${key}"          
-            #   else
-            #     echo "Value of odd index:${i}"
-            #      tempkey="${key}"
-            #   fi
-            # done
+              if [ $(($i%2)) == 0 ]; then 
+                 echo "Value of index:${i}"       
+                 hashmap["${tempkey}"]="${key}"          
+              else
+                echo "Value of odd index:${i}"
+                 tempkey="${key}"
+              fi
+            done
             
             echo "${hashmap[@]}"
 
