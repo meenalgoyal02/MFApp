@@ -102,7 +102,7 @@ jobs:
             
 
             for key in ${tempArray[@]}; do
-                i = ${i} + 1  
+                i = $((${i} + 1 ))
                 echo "${i}"            
               if [ $(($i%2)) == 0 ]; then 
                  echo "Value of index:${i}"       
