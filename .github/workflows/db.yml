@@ -90,6 +90,8 @@ jobs:
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: shadowDb
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -104,15 +106,27 @@ jobs:
     steps: 
      # Downloads a copy of the code in your repository before running CI tests
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       # Performs a clean installation of all dependencies in the `package.json` file
       # For more information, see https://docs.npmjs.com/cli/ci.html
       - name: Install dependencies
         run: npm ci
-      - name: Sort all the script filenames in order        
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres -d shadowDb; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            echo "Waiting..."
+            sleep 2
+          done
+      - name: Sort all the script filenames & execute them in order        
         id: scripts_required_to_run
         run: |
+            export PGPASSWORD=testpassword
             declare -A hashmap
             i=0
             echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
@@ -138,16 +152,13 @@ jobs:
             #output the hashed set from the step.
             sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
 
-            #psql -h 'localhost' -p '5432' -U postgres     
-
             # echo "Sorted hashtable contents:"
             for key in "${sorted_keys[@]}"; do              
                 value=${hashmap[$key]}
                 file="${MIGRATION_FOLDER}/${value}"
-
                 echo "Key: $key, Value: $value,File path:$file"
                 
-                #psql -h 'localhost' -p '5432' -U postgres -f "$file"
+                psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file"
             done
 
 
