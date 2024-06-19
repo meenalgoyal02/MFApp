@@ -86,7 +86,7 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres
+        image: postgres:latest
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
@@ -126,7 +126,6 @@ jobs:
       - name: Sort all the script filenames & execute them in order        
         id: scripts_required_to_run
         run: |
-            export PGPASSWORD=testpassword
             declare -A hashmap
             i=0
             echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
@@ -157,7 +156,8 @@ jobs:
                 value=${hashmap[$key]}
                 file="${MIGRATION_FOLDER}/${value}"
                 echo "Key: $key, Value: $value,File path:$file"
-                
+
+                export PGPASSWORD=postgres
                 psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file"
             done
 
