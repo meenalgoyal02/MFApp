@@ -16,6 +16,9 @@ env:
 jobs:
   migration-required-or-not:
     runs-on: ubuntu-latest
+    outputs:
+      dbUpdateRequired:${{steps.filename_read.outputs.dbUpdateRequired}}
+      scriptFileHash:${{steps.filename_read.outputs.scriptFileHash}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -34,6 +37,7 @@ jobs:
         run: |
           declare -a scriptFiles
           declare -A scriptFileHash
+          db_updateRequired=false
           shopt -s dotglob
 
           for file in $(ls "$MIGRATION_FOLDER"); do
@@ -46,26 +50,14 @@ jobs:
           # Get script file name with succeeding version number
           for key in "${!scriptFileHash[@]}"; do             
               if(($key>=$MIGRATION_HISTORY_VERSION)); then 
+                db_updateRequired=true
                 echo "File name is:${scriptFileHash[$key]}"                
                 break;
               fi
            done
 
-          #output the hashed set from the step.
-          # sorted_keys=($(for key in "${!scriptFileHash[@]}"; do echo "$key"; done | sort))
-
-          # echo "Sorted hashtable contents:"
-          # for key in "${sorted_keys[@]}"; do
-          #   if(($key>=$MIGRATION_HISTORY_VERSION)); then 
-          #     echo "yes"
-          #     break;
-          #   fi
-          #     value=${scriptFileHash[$key]}
-          #     echo "Key: $key, Value: $value"
-          # done
-
-          # Convert scriptFileHash to JSON string
-          # Convert hashmap to JSON string manually
+           echo "Can run further: ${db_updateRequired}"
+          # Convert scriptFileHash to JSON string         
           hashmap_json="{"
           first=true
           for key in "${!scriptFileHash[@]}"; do
@@ -81,42 +73,53 @@ jobs:
           echo "$hashmap_json"
 
           # Set the output
-          echo "::set-output name=scriptFileHash::$hashmap_json"
-
-      - name: Get script file name with succeeding version number
+          echo "dbUpdateRequired=$db_updateRequired" >> "$GITHUB_OUTPUT
+          echo "scriptFileHash=$hashmap_json">> "$GITHUB_OUTPUT    
+ 
+  script-validation-on-shadow-db:
+    runs-on: ubuntu
+    needs: migration-required-or-not
+    if: ${{needs.migration-required-or-not.outputs.dbUpdateRequired=='true'}}
+    steps: 
+      - name: Sort all the script filenames in order        
         id: scripts_required_to_run
         run: |
             declare -A hashmap
             i=0
-            echo "${{steps.filename_read.outputs.scriptFileHash}}"
+            echo "${{needs.migration-required-or-not.outputs.filename_read.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
-            hashmap_json=${{ steps.filename_read.outputs.scriptFileHash }}
-
-            echo "Before eval"
+            hashmap_json=${{ needs.migration-required-or-not.outputs.filename_read.outputs.scriptFileHash }}
+            
             # Deserialize JSON to an associative array
             IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
             
-
             for key in ${tempArray[@]}; do
-                i=$((i + 1))  
-                   
-              if [ $(($i%2)) == 0 ]; then 
-                                        
-                 hashmap["${tempArray[$((i-1))]}"]="${key}"    
-                 echo "${tempArray[$((i-1))]}"     
-              else
-                 
-                 tempkey="${key}"
-                 
+              i=$((i + 1))      
+              if [ $(($i%2)) == 0 ]; then                                         
+                 hashmap["${tempArray[$((i-1))]}"]="${key}"                       
+              else                 
+                 tempkey="${key}"                 
               fi
             done
-            
-          
-            echo "${hashmap[@]}"
 
             for key in "${!hashmap[@]}"; do
               echo "Key: $key, Value: ${hashmap[$key]}"
             done
+
+            #output the hashed set from the step.
+            sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
+  
+            # echo "Sorted hashtable contents:"
+            for key in "${sorted_keys[@]}"; do              
+                value=${scriptFileHash[$key]}
+                echo "Key: $key, Value: $value"
+            done
+
+
+      #- name: run all the scripts of above step in the same order
+
+      
+      
             
           #  for key in "${!steps.filename_read.sorted_hashset[@]}"; do
           #     if(($key>=$MIGRATION_HISTORY_VERSION)); then 
@@ -154,4 +157,5 @@ jobs:
       #   run: |
       #    psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME 
       #    commit;
-      
+       
+   
