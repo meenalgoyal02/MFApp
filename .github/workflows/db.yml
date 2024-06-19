@@ -88,7 +88,8 @@ jobs:
         run: |
             declare -A hashmap
             num=0
-            numeric_variable=10
+            num = $(($num + 1 ))
+            
             echo "The value of the numeric variable is: $num"
 
             echo "${{steps.filename_read.outputs.scriptFileHash}}"
@@ -98,11 +99,7 @@ jobs:
             echo "Before eval"
             # Deserialize JSON to an associative array
            
-            IFS=':,' read -ra tempArray <<< "$hashmap_json"
-            
-          
-            num = $(($num + 1 ))
-            echo "Hello: $num"
+            IFS=':,' read -ra tempArray <<< "$hashmap_json"           
 
             # for key in ${tempArray[@]}; do
             #     i = $(($i + 1 ))
