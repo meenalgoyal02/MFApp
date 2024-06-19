@@ -87,9 +87,9 @@ jobs:
         run: |
             declare -A hashmap
             i=0
-            echo "${{needs.migration-required-or-not.outputs.filename_read.outputs.scriptFileHash}}"
+            echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
-            hashmap_json=${{ needs.migration-required-or-not.outputs.filename_read.outputs.scriptFileHash }}
+            hashmap_json=${{ needs.migration-required-or-not.outputs.scriptFileHash }}
             
             # Deserialize JSON to an associative array
             IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
