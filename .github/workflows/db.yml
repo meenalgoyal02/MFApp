@@ -87,8 +87,9 @@ jobs:
         id: scripts_required_to_run
         run: |
             declare -A hashmap
+            num=10
             numeric_variable=10
-            echo "The value of the numeric variable is: $numeric_variable"
+            echo "The value of the numeric variable is: $num"
 
             echo "${{steps.filename_read.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
@@ -98,7 +99,7 @@ jobs:
             # Deserialize JSON to an associative array
            
             IFS=':,' read -ra tempArray <<< "$hashmap_json"
-            num=0
+            
           
             num = $(($num + 1 ))
             echo "Hello: $num"
