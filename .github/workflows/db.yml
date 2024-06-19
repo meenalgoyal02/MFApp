@@ -17,8 +17,8 @@ jobs:
   migration-required-or-not:
     runs-on: ubuntu-latest
     outputs:
-      dbUpdateRequired:${{steps.filename_read.outputs.dbUpdateRequired}}
-      scriptFileHash:${{steps.filename_read.outputs.scriptFileHash}}
+      dbUpdateRequired: ${{steps.filename_read.outputs.dbUpdateRequired}}
+      scriptFileHash: ${{steps.filename_read.outputs.scriptFileHash}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
