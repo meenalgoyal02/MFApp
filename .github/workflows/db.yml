@@ -89,7 +89,7 @@ jobs:
             declare -A hashmap
             echo "${{steps.filename_read.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
-            hashmap_json="${{ steps.filename_read.outputs.scriptFileHash }}"
+            hashmap_json=${{ steps.filename_read.outputs.scriptFileHash }}
 
             echo "Before eval"
             # Deserialize JSON to an associative array
