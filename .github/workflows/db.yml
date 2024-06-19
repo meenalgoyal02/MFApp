@@ -76,7 +76,7 @@ jobs:
             fi
             hashmap_json+="\"$key\":\"${scriptFileHash[$key]}\""
           done
-          hashmap_json+="}"
+          hashmap_json+=$(printf '%s' '}')
           
           echo "$hashmap_json"
 
