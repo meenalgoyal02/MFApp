@@ -87,6 +87,7 @@ jobs:
         id: scripts_required_to_run
         run: |
             declare -A hashmap
+            declare -A tempArray
             echo "${{steps.filename_read.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
             hashmap_json=${{ steps.filename_read.outputs.scriptFileHash }}
@@ -94,14 +95,18 @@ jobs:
             echo "Before eval"
             # Deserialize JSON to an associative array
            
-            while IFS="=" read -r key value; do
-              key="${key%\"}"
-              key="${key#\"}"
-              value="${value%\"}"
-              value="${value#\"}"
-              hashmap["$key"]="$value"
-            done < <(echo "$hashmap_json" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
-         
+            IFS=':,' read -ra tempArray <<< "$hashmap_json"
+            i=0
+            
+            for key in ${tempArray[@]}; do
+              $i=$i+1              
+              if[$(($i%2)) -eq 0]; then 
+                 hashmap["${tempKey}"]="${key}"
+              else
+                $tempkey="${key}"
+              fi
+            done
+            
             echo "${hashmap[@]}"
 
             for key in "${!hashmap[@]}"; do
