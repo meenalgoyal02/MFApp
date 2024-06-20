@@ -32,7 +32,7 @@ jobs:
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
           psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME  
           
-          $migration_version=$(psql select top 1 product_version from Migration_History order by )
+          #$migration_version=$(psql select top 1 product_version from Migration_History order by )
 
       - name: Get all the scripts from configured folder
         id: filename_read
