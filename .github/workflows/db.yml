@@ -162,7 +162,8 @@ jobs:
                 export PGPASSWORD=postgres
                 query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file")
                 echo "Query output: $query_output"
-                if($query_output| grep -q "ERROR"); then
+
+                if echo "$query_output" | grep -q "Error"; then
                   can_run_on_prod=false
                   echo "Error in script execution. Can not run on Prod."
                   break;
