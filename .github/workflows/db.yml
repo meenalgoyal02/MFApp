@@ -42,151 +42,152 @@ jobs:
           #declare -A scriptFileHash
           #db_updateRequired=false
           migrationHistoryVersion="${{ steps.get_migration_history.outputs.migration_history_version }}"
-           echo "migrationHistoryVersion: $migrationHistoryVersion"
-          #shopt -s dotglob
+          echo "migrationHistoryVersion: $migrationHistoryVersion"
+          shopt -s dotglob
 
-  #         for file in $(ls "$MIGRATION_FOLDER"); do
-  #           echo "File name:$file"
-  #           scriptFiles=(${scriptFiles[@]} "$file")
-  #           IFS='_' read -ra splitName <<< "$file"
-  #           scriptFileHash["${splitName[0]}"]="${file}"          
-  #         done
+          for file in $(ls "$MIGRATION_FOLDER"); do
+            echo "File name:$file"
+            scriptFiles=(${scriptFiles[@]} "$file")
+            IFS='_' read -ra splitName <<< "$file"
+            scriptFileHash["${splitName[0]}"]="${file}"          
+          done
 
-  #         # Get script file name with succeeding version number
-  #         for key in "${!scriptFileHash[@]}"; do             
-  #             if(($key>$MIGRATION_HISTORY_VERSION)); then 
-  #               db_updateRequired=true
-  #               echo "File name is:${scriptFileHash[$key]}"                
-  #               break;
-  #             fi
-  #          done
+          # Get script file name with succeeding version number
+          for key in "${!scriptFileHash[@]}"; do             
+              if(($key>$migrationHistoryVersion)); then 
+                db_updateRequired=true
+                echo "File name is:${scriptFileHash[$key]}"                
+                break;
+              fi
+           done
 
-  #          echo "Can run further: ${db_updateRequired}"
-  #         # Convert scriptFileHash to JSON string         
-  #         hashmap_json="{"
-  #         first=true
-  #         for key in "${!scriptFileHash[@]}"; do
-  #           if [ "$first" = true ]; then
-  #             first=false
-  #           else
-  #             hashmap_json+=","
-  #           fi
-  #           hashmap_json+="\"$key\":\"${scriptFileHash[$key]}\""
-  #         done
-  #         hashmap_json+=$(printf '%s' '}')
+           echo "Can run further: ${db_updateRequired}"
+          # Convert scriptFileHash to JSON string         
+          hashmap_json="{"
+          first=true
+          for key in "${!scriptFileHash[@]}"; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              hashmap_json+=","
+            fi
+            hashmap_json+="\"$key\":\"${scriptFileHash[$key]}\""
+          done
+          hashmap_json+=$(printf '%s' '}')
           
-  #         echo "$hashmap_json"
+          echo "$hashmap_json"
 
-  #         # Set the output
-  #         echo "dbUpdateRequired=$db_updateRequired" >> "$GITHUB_OUTPUT"
-  #         echo "scriptFileHash=$hashmap_json">> "$GITHUB_OUTPUT"    
+          # Set the output
+          echo "dbUpdateRequired=$db_updateRequired" >> "$GITHUB_OUTPUT"
+          echo "scriptFileHash=$hashmap_json">> "$GITHUB_OUTPUT"    
  
-  # script-validation-on-shadow-db:
-  #   needs: migration-required-or-not
-  #   runs-on: ubuntu-latest    
+  script-validation-on-shadow-db:
+    needs: migration-required-or-not
+    runs-on: ubuntu-latest    
 
-  #   # Service containers to run with `container-job`
-  #   services:
-  #     # Label used to access the service container
-  #     postgres:
-  #       # Docker Hub image
-  #       image: postgres:latest
-  #       # Provide the password for postgres
-  #       env:
-  #         POSTGRES_PASSWORD: postgres
-  #         POSTGRES_USER: postgres
-  #         POSTGRES_DB: shadowDb
-  #       # Set health checks to wait until postgres has started
-  #       options: >-
-  #         --health-cmd pg_isready
-  #         --health-interval 10s
-  #         --health-timeout 5s
-  #         --health-retries 5
-  #       ports:
-  #         # Maps tcp port 5432 on service container to the host
-  #         - 5432:5432
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:latest
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: shadowDb
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
 
-  #   if: ${{needs.migration-required-or-not.outputs.dbUpdateRequired=='true'}}
-  #   steps: 
-  #    # Downloads a copy of the code in your repository before running CI tests
-  #     - name: Check out repository code
-  #       uses: actions/checkout@v2
+    if: ${{needs.migration-required-or-not.outputs.dbUpdateRequired=='true'}}
+    steps: 
+     # Downloads a copy of the code in your repository before running CI tests
+      - name: Check out repository code
+        uses: actions/checkout@v2
 
-  #     # Performs a clean installation of all dependencies in the `package.json` file      
-  #     - name: Install dependencies
-  #       run: npm ci
-  #     # - name: Wait for PostgreSQL to be ready
-  #     #   run: |
-  #     #     echo "Waiting for PostgreSQL to be ready..."
-  #     #     for i in {1..30}; do
-  #     #       if pg_isready -h localhost -p 5432 -U postgres -d shadowDb; then
-  #     #         echo "PostgreSQL is ready"
-  #     #         break
-  #     #       fi
-  #     #       echo "Waiting..."
-  #     #       sleep 2
-  #     #     done
-  #     - name: Sort all the script filenames & execute them in order        
-  #       id: scripts_required_to_run
-  #       run: |
-  #           migrationHistoryVersion=${{steps.get_migration_history.outputs.MigrationHistoryVersion}}
-  #           declare -A hashmap
-  #           i=0
-  #           echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
-  #           # Access the hashmap JSON string
-  #           hashmap_json=${{ needs.migration-required-or-not.outputs.scriptFileHash }}
+      # Performs a clean installation of all dependencies in the `package.json` file      
+      - name: Install dependencies
+        run: npm ci
+      # - name: Wait for PostgreSQL to be ready
+      #   run: |
+      #     echo "Waiting for PostgreSQL to be ready..."
+      #     for i in {1..30}; do
+      #       if pg_isready -h localhost -p 5432 -U postgres -d shadowDb; then
+      #         echo "PostgreSQL is ready"
+      #         break
+      #       fi
+      #       echo "Waiting..."
+      #       sleep 2
+      #     done
+      - name: Sort all the script filenames & execute them in order        
+        id: scripts_required_to_run
+        run: |
+            migrationHistoryVersion="${{ needs.migration-required-or-not.outputs.MigrationHistoryVersion }}"
+            echo "migrationHistoryVersion: $migrationHistoryVersion"
+            declare -A hashmap
+            i=0
+            echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
+            # Access the hashmap JSON string
+            hashmap_json=${{ needs.migration-required-or-not.outputs.scriptFileHash }}
             
-  #           # Deserialize JSON to an associative array
-  #           IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
+            # Deserialize JSON to an associative array
+            IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
             
-  #           for key in ${tempArray[@]}; do
-  #             i=$((i + 1))      
-  #             if [ $(($i%2)) == 0 ]; then                                         
-  #                hashmap["${tempArray[$((i-1))]}"]="${key}"                       
-  #             else                 
-  #                tempkey="${key}"                 
-  #             fi
-  #           done
+            for key in ${tempArray[@]}; do
+              i=$((i + 1))      
+              if [ $(($i%2)) == 0 ]; then                                         
+                 hashmap["${tempArray[$((i-1))]}"]="${key}"                       
+              else                 
+                 tempkey="${key}"                 
+              fi
+            done
 
-  #           for key in "${!hashmap[@]}"; do
-  #             echo "Key: $key, Value: ${hashmap[$key]}"
-  #           done
+            for key in "${!hashmap[@]}"; do
+              echo "Key: $key, Value: ${hashmap[$key]}"
+            done
 
-  #           #output the hashed set from the step.
-  #           sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
+            #output the hashed set from the step.
+            sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
 
-  #           can_run_on_prod=true
-  #           # echo "Sorted hashtable contents:"
-  #           for key in "${sorted_keys[@]}"; do              
-  #               value=${hashmap[$key]}
-  #               file="${MIGRATION_FOLDER}/${value}"
-  #               echo "Key: $key, Value: $value,File path:$file"
+            can_run_on_prod=true
+            # echo "Sorted hashtable contents:"
+            for key in "${sorted_keys[@]}"; do              
+                value=${hashmap[$key]}
+                file="${MIGRATION_FOLDER}/${value}"
+                echo "Key: $key, Value: $value,File path:$file"
 
-  #               export PGPASSWORD=postgres
-  #               query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
-  #               echo "Query output: ${query_output}"
+                export PGPASSWORD=postgres
+                query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
+                echo "Query output: ${query_output}"
 
-  #               if echo "$query_output" | grep -q "ERROR"; then
-  #                 can_run_on_prod=false
-  #                 echo "Error in script execution. Can not run on Prod."
-  #                 break;
-  #               fi
-  #           done
+                if echo "$query_output" | grep -q "ERROR"; then
+                  can_run_on_prod=false
+                  echo "Error in script execution. Can not run on Prod."
+                  break;
+                fi
+            done
 
 
-  #           if [ "$can_run_on_prod" = true ]; then
-  #             echo "Running scripts on Prod"
-  #             # run incremental scripts on Prod db.
-  #             for key in "${!hashmap[@]}"; do             
-  #             if(($key>$migrationHistoryVersion)); then 
+            if [ "$can_run_on_prod" = true ]; then
+              echo "Running scripts on Prod"
+              # run incremental scripts on Prod db.
+              for key in "${!hashmap[@]}"; do             
+              if(($key>$migrationHistoryVersion)); then 
                 
-  #               file="${MIGRATION_FOLDER}/${hashmap[$key]}"
-  #               export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+                file="${MIGRATION_FOLDER}/${hashmap[$key]}"
+                export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
 
-  #               psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
-  #             fi
-  #             done
-  #           fi
+                psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
+              fi
+              done
+            fi
                 
       
 
