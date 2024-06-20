@@ -30,7 +30,9 @@ jobs:
       - name: Get migration history version
         run: |
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
-          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME     
+          psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME  
+          
+          $migration_version=$(psql select top 1 product_version from Migration_History order by )
 
       - name: Get all the scripts from configured folder
         id: filename_read
@@ -159,7 +161,7 @@ jobs:
 
                 export PGPASSWORD=postgres
                 query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file")
-                if($query_output| grep -q "ERROR")
+                if($query_output| grep -q "ERROR"); then
                   can_run_on_prod=false
                   echo "Error in script execution. Can not run on Prod."
                   break;
