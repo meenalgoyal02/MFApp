@@ -33,7 +33,7 @@ jobs:
         
         - name: Set ASG capacity in primary region
           id: disaster-recovery-ASG
-          if: ${{steps.ec2-status.instance_state == 'running' }}
+          if: ${{steps.ec2-status.outputs.instance_state == 'running' }}
           run: |
             aws autoscaling update-auto-scaling-group --auto-scaling-group-name $PRIMARY_ASG_NAME --desired-capacity 0 --min-size 0 --max-size 0 --region $AWS_PRIMARY_REGION
 
