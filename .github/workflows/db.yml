@@ -29,8 +29,8 @@ jobs:
 
       - name: Get migration history version
         run: |
-          # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
-          query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -t -c "select product_version from '__MigrationsHistory' order by migration_id desc limit 1" 2>&1)
+          # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'          
+          query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d poc -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1"" 2>&1)
           echo "Query output: $query_output"        
 
   #     - name: Get all the scripts from configured folder
