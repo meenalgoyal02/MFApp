@@ -163,7 +163,7 @@ jobs:
                 query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
                 echo "Query output: ${query_output}"
 
-                if echo "$query_output" | grep -q "Error"; then
+                if echo "$query_output" | grep -q "ERROR"; then
                   can_run_on_prod=false
                   echo "Error in script execution. Can not run on Prod."
                   break;
