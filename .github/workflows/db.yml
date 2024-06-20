@@ -53,8 +53,8 @@ jobs:
           done
 
           # Get script file name with succeeding version number
-          for key in "${!scriptFileHash[@]}"; do             
-              if(($key>$migrationHistoryVersion)); then 
+          for key in "${!scriptFileHash[@]}"; do                    
+              if [ "$key" -gt "$migrationHistoryVersion" ];then 
                 db_updateRequired=true
                 echo "File name is:${scriptFileHash[$key]}"                
                 break;
