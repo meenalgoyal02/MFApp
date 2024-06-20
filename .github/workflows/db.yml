@@ -10,8 +10,7 @@ env:
   PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  MIGRATION_FOLDER: 'src/migrations/ddl'
-  MIGRATION_HISTORY_VERSION: '3'
+  MIGRATION_FOLDER: 'src/migrations/ddl'  
 
 jobs:
   migration-required-or-not:
@@ -19,6 +18,7 @@ jobs:
     outputs:
       dbUpdateRequired: ${{steps.filename_read.outputs.dbUpdateRequired}}
       scriptFileHash: ${{steps.filename_read.outputs.scriptFileHash}}
+      migrationHistoryVersion: ${{steps.get_migration_history.outputs.MigrationHistoryVersion}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -28,18 +28,22 @@ jobs:
           npm install
 
       - name: Get migration history version
+        id: get_migration_history
         run: |
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'          
           query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d poc -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)
-          echo "Query output: $query_output"        
-
-  #     - name: Get all the scripts from configured folder
-  #       id: filename_read
-  #       run: |
-  #         declare -a scriptFiles
-  #         declare -A scriptFileHash
-  #         db_updateRequired=false
-  #         shopt -s dotglob
+          #echo "::set-output name=migration_history_version::$query_output"       
+          echo "MigrationHistoryVersion=$query_output">> "$GITHUB_OUTPUT" 
+          
+      - name: Get all the scripts from configured folder
+        id: filename_read
+        run: |
+          declare -a scriptFiles
+          declare -A scriptFileHash
+          db_updateRequired=false
+          migrationHistoryVersion=${{steps.get_migration_history.outputs.MigrationHistoryVersion}}
+          echo "migrationHistoryVersion: $migrationHistoryVersion"
+          shopt -s dotglob
 
   #         for file in $(ls "$MIGRATION_FOLDER"); do
   #           echo "File name:$file"
@@ -108,8 +112,7 @@ jobs:
   #     - name: Check out repository code
   #       uses: actions/checkout@v2
 
-  #     # Performs a clean installation of all dependencies in the `package.json` file
-  #     # For more information, see https://docs.npmjs.com/cli/ci.html
+  #     # Performs a clean installation of all dependencies in the `package.json` file      
   #     - name: Install dependencies
   #       run: npm ci
   #     # - name: Wait for PostgreSQL to be ready
@@ -126,6 +129,7 @@ jobs:
   #     - name: Sort all the script filenames & execute them in order        
   #       id: scripts_required_to_run
   #       run: |
+  #           migrationHistoryVersion=${{steps.get_migration_history.outputs.MigrationHistoryVersion}}
   #           declare -A hashmap
   #           i=0
   #           echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
@@ -174,7 +178,7 @@ jobs:
   #             echo "Running scripts on Prod"
   #             # run incremental scripts on Prod db.
   #             for key in "${!hashmap[@]}"; do             
-  #             if(($key>$MIGRATION_HISTORY_VERSION)); then 
+  #             if(($key>$migrationHistoryVersion)); then 
                 
   #               file="${MIGRATION_FOLDER}/${hashmap[$key]}"
   #               export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
