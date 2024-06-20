@@ -38,12 +38,12 @@ jobs:
       - name: Get all the scripts from configured folder
         id: filename_read
         run: |
-          declare -a scriptFiles
-          declare -A scriptFileHash
-          db_updateRequired=false
-          # migrationHistoryVersion=${{steps.get_migration_history.outputs.migration_history_version}}
-          # echo "migrationHistoryVersion: $migrationHistoryVersion"
-          shopt -s dotglob
+          #declare -a scriptFiles
+          #declare -A scriptFileHash
+          #db_updateRequired=false
+           migrationHistoryVersion=${{steps.get_migration_history.outputs.migration_history_version}}
+           echo "migrationHistoryVersion: $migrationHistoryVersion"
+          #shopt -s dotglob
 
   #         for file in $(ls "$MIGRATION_FOLDER"); do
   #           echo "File name:$file"
