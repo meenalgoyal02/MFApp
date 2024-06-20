@@ -32,7 +32,7 @@ jobs:
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'
           psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME  
           
-          #$migration_version=$(psql select top 1 product_version from Migration_History order by )
+          $migration_version=$(select product_version from "__MigrationsHistory" order by migration_id desc limit 1)
 
       - name: Get all the scripts from configured folder
         id: filename_read
@@ -51,7 +51,7 @@ jobs:
 
           # Get script file name with succeeding version number
           for key in "${!scriptFileHash[@]}"; do             
-              if(($key>=$MIGRATION_HISTORY_VERSION)); then 
+              if(($key>$MIGRATION_HISTORY_VERSION)); then 
                 db_updateRequired=true
                 echo "File name is:${scriptFileHash[$key]}"                
                 break;
@@ -184,30 +184,7 @@ jobs:
               fi
               done
             fi
-          #  for key in "${!steps.filename_read.sorted_hashset[@]}"; do
-          #     if(($key>=$MIGRATION_HISTORY_VERSION)); then 
-          #       echo "yes"
-          #       break;
-          #     fi
-          #  done
-
-
-      # - name: Run migration script
-      #   id: migration_script
-      #   continue-on-error: true 
-      #   run: |
-      #     # Check if the target is not a directory
-      #     if [ ! -d "$MIGRATION_FOLDER" ]; then
-      #       exit 1
-      #     fi
-          
-      #     # Loop through files in the target directory
-      #     for file in "$MIGRATION_FOLDER"/*; do
-      #       if [ -f "$file" ]; then
-      #         echo "$file"
-      #         psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"
-      #       fi
-      #     done          
+                
       
 
        
