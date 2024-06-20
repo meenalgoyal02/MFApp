@@ -41,7 +41,7 @@ jobs:
           #declare -a scriptFiles
           #declare -A scriptFileHash
           #db_updateRequired=false
-          migrationHistoryVersion=${{ steps.get_migration_history.outputs.migration_history_version }}
+          migrationHistoryVersion=$"{{ steps.get_migration_history.outputs.migration_history_version }}""
            echo "migrationHistoryVersion: $migrationHistoryVersion"
           #shopt -s dotglob
 
