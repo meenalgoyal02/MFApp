@@ -7,7 +7,7 @@ env:
     AWS_REGION: 'us-east-1'
     TAG_KEY: 'Purpose'
     TAG_VALUE: 'SRE-POC'
-    ALB_NAME: ''
+    ALB_NAME: 'pocSre'
 
 jobs:
     get-id-of-resource:
@@ -20,7 +20,7 @@ jobs:
             if [ -z "$ALB_NAME"]; then
                 # Retrieve by tag
                 load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)
-
+                
                 # Step 2: Find the load balancer ARN by tag name
                 for arn in $load_balancer_arns; do
                 tags=$(aws elbv2 describe-tags --resource-arns $arn --query 'TagDescriptions[0].Tags' --output json)
