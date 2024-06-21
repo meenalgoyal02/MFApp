@@ -41,3 +41,5 @@ jobs:
 
             # Step 3: Retrieve the DNS name of the load balancer
             dns_name=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --output text)
+
+            echo "Query output:$dns_name"
