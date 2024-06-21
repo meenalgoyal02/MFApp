@@ -1,5 +1,5 @@
 name: Retrieve id of resource
-on: workflow_dispatch
+on: push
 
 env:
     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -21,3 +21,23 @@ jobs:
             # Retrieve by tag
             load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)
             echo "2nd Query output: $load_balancer_arns"
+
+            # Step 2: Find the load balancer ARN by tag name
+            for arn in $load_balancer_arns; do
+            tags=$(aws elbv2 describe-tags --resource-arns $arn --query 'TagDescriptions[0].Tags' --output json)
+            name=$(echo $tags | jq -r --arg TAG_KEY "$TAG_KEY" --arg TAG_VALUE "$TAG_VALUE" '.[] | select(.Key == $TAG_KEY and .Value == $TAG_VALUE) | .Value')
+            
+            if [ "$name" == "$TAG_VALUE" ]; then
+                load_balancer_arn=$arn
+                break
+            fi
+            done
+
+            # Check if the load balancer ARN was found
+            if [ -z "$load_balancer_arn" ]; then
+            echo "Load balancer with tag $TAG_KEY=$TAG_VALUE not found."
+            exit 1
+            fi
+
+            # Step 3: Retrieve the DNS name of the load balancer
+            dns_name=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --output text)
