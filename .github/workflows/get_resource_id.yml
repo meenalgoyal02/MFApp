@@ -5,6 +5,8 @@ env:
     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     AWS_REGION: 'us-east-1'
+    TAG_KEY: 'Purpose'
+    TAG_VALUE: 'SRE-POC'
 
 jobs:
     get-id-of-resource:
@@ -15,3 +17,7 @@ jobs:
           run: |
             output=$(aws elbv2 describe-load-balancers --names pocSre --region $AWS_REGION| jq -r '.LoadBalancers[0].DNSName')
             echo "Query output:$output"
+
+            # Retrieve by tag
+            load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)
+            echo "2nd Query output: $load_balancer_arns"
