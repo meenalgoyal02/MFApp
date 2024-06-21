@@ -1,0 +1,17 @@
+name: Retrieve id of resource
+on: workflow_dispatch
+
+env:
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    AWS_REGION: 'us-east-1'
+
+jobs:
+    get-id-of-resource:
+        runs-on: ubuntu-latest
+        steps:
+        - name: get-id-by-name
+          id: id-by-name
+          run: |
+            output=(aws elbv2 describe-load-balancers --names pocSre --profile nagarro --region us-east-1 | jq -r '.LoadBalancers[0].DNSName')
+            echo "Query output:$output"
