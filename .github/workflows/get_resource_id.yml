@@ -17,7 +17,7 @@ jobs:
           id: id-by-name
           run: |
            
-            if [ -z "$ALB_NAME"]; then
+            if [ -z "$ALB_NAME" ]; then
                 # Retrieve by tag
                 load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --output text)
                 
