@@ -13,5 +13,5 @@ jobs:
         - name: get-id-by-name
           id: id-by-name
           run: |
-            output=(aws elbv2 describe-load-balancers --names pocSre --profile nagarro --region us-east-1 | jq -r '.LoadBalancers[0].DNSName')
+            output=$(aws elbv2 describe-load-balancers --names pocSre --region $AWS_REGION| jq -r '.LoadBalancers[0].DNSName')
             echo "Query output:$output"
