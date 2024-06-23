@@ -41,7 +41,7 @@ runs:
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
         AWS_REGION: ${{ inputs.aws-region }}      
     steps:
-     - name: get-id                
+    - name: get-id                
        run: |        
         if [ -z "${{ inputs.resource-name }}" ]; then
             # Retrieve by tag
