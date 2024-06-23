@@ -35,16 +35,14 @@ outputs:
     #     ${{steps.get-id.outputs.resource_id}}
 
 runs: 
-    using: composite     
+    using: 'composite'     
     env:
         AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
         AWS_REGION: ${{ inputs.aws-region }}      
     steps:
-     - name: get-id        
-        shell: bash
-        run: |
-        
+     - name: get-id                
+       run: |        
         if [ -z "${{ inputs.resource-name }}" ]; then
             # Retrieve by tag
             load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --region $inputs.aws-region --output text)
@@ -74,6 +72,7 @@ runs:
             echo "DNS name by ALB name:-$dns_name"
         fi;
         echo "resource_id=$dns_name">> "$GITHUB_OUTPUT" 
+       shell: bash
 # env:
 #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
