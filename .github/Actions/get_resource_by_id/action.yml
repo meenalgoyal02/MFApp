@@ -31,8 +31,8 @@ inputs:
 outputs:
    resource-id:
       description: 'Resource id'
-      value:
-        ${{steps.get-id.outputs.resource_id}}
+    #   value:
+    #     ${{steps.get-id.outputs.resource_id}}
 
 runs: 
     using: composite     
