@@ -1,6 +1,6 @@
-name: Retrieve id of resource by name or tag key-value pair
-author: Meenal Goyal
-description: This action retrieves the id/dns name etc of the resource
+name: 'Retrieve id of resource by name or tag key-value pair'
+author: 'Meenal Goyal'
+description: 'This action retrieves the id/dns name etc of the resource'
 inputs:
     aws-access-key-id:
         description: 'AWS Access Key ID'
