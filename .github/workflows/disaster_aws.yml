@@ -27,26 +27,34 @@ jobs:
             python -m pip install --upgrade pip
             pip install awscli
 
-        - name: Retrieve DNS name of load balancer
-          id: alb-dns-name 
-          uses: ./.github/actions/get_resource_by_id
+        - name: Run AWS CLI Action
+          uses: ./.github/actions/aws-cli-action
           with:
-            aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
-            aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
-            aws-region: ${{ env.AWS_PRIMARY_REGION }}              
-            resource-type: ''               
-            resource-name: ${{ env.PRIMARY_ASG_NAME }}               
-            resource-tag-name: ${{ env.ALB_TAG_KEY }}              
-            resource-tag-value: ${{ env.ALB_TAG_VALUE }}           
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: us-east-1
+            aws-cli-command: s3 ls
 
-        - name: Retrieve instance status
-          id: ec2-status
-          run: |
-           echo "DNS name of ALB-${{ steps.alb-dns-name.outputs.resource-id }}"
-           INSTANCE_STATE=$(aws ec2 describe-instance-status --instance-ids $SECONDARY_EC2_ID --include-all-instance --region $AWS_SECONDARY_REGION | jq -r '.InstanceStatuses[0].InstanceState.Name') 
-           echo "Instance state: $INSTANCE_STATE"
-           echo "::set-output name=instance_state::$INSTANCE_STATE"
-           echo "${{steps.ec2-status.instance_state}}"
+        # - name: Retrieve DNS name of load balancer
+        #   id: alb-dns-name 
+        #   uses: ./.github/actions/get_resource_by_id
+        #   with:
+        #     aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+        #     aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+        #     aws-region: ${{ env.AWS_PRIMARY_REGION }}              
+        #     resource-type: ''               
+        #     resource-name: ${{ env.PRIMARY_ASG_NAME }}               
+        #     resource-tag-name: ${{ env.ALB_TAG_KEY }}              
+        #     resource-tag-value: ${{ env.ALB_TAG_VALUE }}           
+
+        # - name: Retrieve instance status
+        #   id: ec2-status
+        #   run: |
+        #    echo "DNS name of ALB-${{ steps.alb-dns-name.outputs.resource-id }}"
+        #    INSTANCE_STATE=$(aws ec2 describe-instance-status --instance-ids $SECONDARY_EC2_ID --include-all-instance --region $AWS_SECONDARY_REGION | jq -r '.InstanceStatuses[0].InstanceState.Name') 
+        #    echo "Instance state: $INSTANCE_STATE"
+        #    echo "::set-output name=instance_state::$INSTANCE_STATE"
+        #    echo "${{steps.ec2-status.instance_state}}"
                 
         # - name: Set Route53 weight in alternate region
         #   id: disaster-recovery
