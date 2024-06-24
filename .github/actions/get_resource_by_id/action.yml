@@ -64,4 +64,4 @@ runs:
             echo "DNS name by ALB name:-$dns_name"
         fi;
         echo "resource_id=$dns_name">> "$GITHUB_OUTPUT" 
-    shell: bash
+      shell: bash
