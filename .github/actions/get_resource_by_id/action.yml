@@ -30,10 +30,12 @@ inputs:
 outputs:
   resource-id:
     description: 'Resource id'
+    value: $${{ steps.retrieve-dns-name.outputs.resource-id }}
 runs:
   using: 'composite'
   steps:
-    - name: Set up AWS CLI
+    - name: Retrieve DNS name
+      id: retrieve-dns-name
       run:  |        
         if [ -z "${{ inputs.resource-name }}" ]; then
             # Retrieve by tag
