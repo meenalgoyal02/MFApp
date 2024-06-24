@@ -63,5 +63,5 @@ runs:
             dns_name=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
             echo "DNS name by ALB name:-$dns_name"
         fi;
-        echo "resource_id=$dns_name">> "$GITHUB_OUTPUT" 
+        echo "resource-id=$dns_name">> "$GITHUB_OUTPUT" 
       shell: bash
