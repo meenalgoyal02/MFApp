@@ -1,37 +1,67 @@
 # .github/actions/aws-cli-action/action.yml
-name: 'AWS CLI Action'
-description: 'A custom action to run AWS CLI commands'
+name: 'Retrieve id of resource by name or tag key-value pair'
+description: 'This action retrieves the id/dns name etc of the resource'
 inputs:
   aws-access-key-id:
-    description: 'AWS Access Key ID'
-    required: true
+      description: 'AWS Access Key ID'
+      required: true
   aws-secret-access-key:
-    description: 'AWS Secret Access Key'
-    required: true
+        description: 'AWS Secret Access Key'
+        required: true
   aws-region:
-    description: 'AWS Region'
-    required: true
-  aws-cli-command:
-    description: 'AWS CLI command to run'
-    required: true
+      description: 'AWS Region'
+      required: true
+  resource-type:
+        description: 'The type of resource for whome id is required.Possible values are: ALB'
+        required: false
+        default: 'ALB'
+  resource-name:
+        description: 'Resource name for which id is needed'
+        required: true
+        default: ''
+  resource-tag-name:
+        description: 'Resource tag name'
+        required: false
+        default: ''
+  resource-tag-value:
+        description: 'Resource tag value'
+        required: false
+        default: ''
 outputs:
-  command-output:
-    description: 'The output from the AWS CLI command'
+  resource-id:
+    description: 'Resource id'
 runs:
   using: 'composite'
   steps:
     - name: Set up AWS CLI
-      run: |
-        echo "Configuring AWS CLI..."
-        aws configure set aws_access_key_id ${{ inputs.aws-access-key-id }}
-        aws configure set aws_secret_access_key ${{ inputs.aws-secret-access-key }}
-        aws configure set default.region ${{ inputs.aws-region }}
-      shell: bash
+      run:  |        
+        if [ -z "${{ inputs.resource-name }}" ]; then
+            # Retrieve by tag
+            load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --region $inputs.aws-region --output text)
+            
+            # Step 2: Find the load balancer ARN by tag name
+            for arn in $load_balancer_arns; do
+            tags=$(aws elbv2 describe-tags --resource-arns $arn --query 'TagDescriptions[0].Tags' --region $inputs.aws-region --output json)
+            name=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" '.[] | select(.Key == ${{ inputs.resource-tag-name }} and .Value == ${{ inputs.resource-tag-value }}) | .Value')
+            
+            if [ "$name" == "${{ inputs.resource-tag-value }}" ]; then
+                load_balancer_arn=$arn
+                break
+            fi
+            done
 
-    - name: Run AWS CLI command
-      id: run_aws_command
-      run: |
-        echo "Running AWS CLI command..."
-        output=$(aws ${{ inputs.aws-cli-command }})
-        echo "command-output=$output" >> $GITHUB_OUTPUT
-      shell: bash
+            # Check if the load balancer ARN was found
+            if [ -z "$load_balancer_arn" ]; then
+            echo "Load balancer with tag ${{ inputs.resource-tag-name }}=${{ inputs.resource-tag-value }} not found."
+            exit 1
+            fi
+
+            # Step 3: Retrieve the DNS name of the load balancer
+            dns_name=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --region ${{ inputs.aws-region }} --output text)
+            echo "DNS name by tag name:-$dns_name"
+        else
+            dns_name=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
+            echo "DNS name by ALB name:-$dns_name"
+        fi;
+        echo "resource_id=$dns_name">> "$GITHUB_OUTPUT" 
+    shell: bash
