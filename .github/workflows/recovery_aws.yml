@@ -1,4 +1,4 @@
-name: Run AWS CLI commands
+name: Update ASG in secondary region.
 on: workflow_dispatch
 
 env:
