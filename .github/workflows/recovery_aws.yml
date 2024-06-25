@@ -20,5 +20,5 @@ jobs:
             python -m pip install --upgrade pip
             pip install awscli
         - run: |
-           aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 2 --min-size 0 --max-size 3 --region $AWS_PRIMARY_REGION
+           aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 2 --min-size 0 --max-size 3 --region $AWS_REGION
            #aws ec2 start-instances --instance-ids $EC2_ID --region $AWS_REGION
