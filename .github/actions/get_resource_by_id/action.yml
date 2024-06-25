@@ -30,7 +30,7 @@ inputs:
 outputs:
   resource-id:
     description: 'Resource id'
-    value: $${{ steps.retrieve-dns-name.outputs.resource-id }}
+    value: ${{ steps.retrieve-dns-name.outputs.resource-id }}
 runs:
   using: 'composite'
   steps:
