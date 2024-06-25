@@ -8,7 +8,7 @@ env:
   AWS_SECONDARY_REGION: 'us-east-2'
   SECONDARY_EC2_ID: 'i-0550bfc70237ff835'
   HOSTED_ZONE_ID: 'Z02212032GSWAL5ZYLGZ4'
-  PRIMARY_ASG_NAME: 'pocSre'
+  ASG_NAME: 'pocSre'
   ALB_TAG_KEY: 'Purpose'
   ALB_TAG_VALUE: 'SRE-POC'
 
@@ -27,38 +27,29 @@ jobs:
             python -m pip install --upgrade pip
             pip install awscli
 
-        - name: Retrieve DNS name of load balancer
-          id: alb-dns-name 
+        - name: Retrieve DNS name of load balancer for primary region
+          id: secondary-alb-dns-name 
           uses: ./.github/actions/get_resource_by_id
           with:
             aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
             aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
-            aws-region: ${{ env.AWS_PRIMARY_REGION }}              
+            aws-region: ${{ env.AWS_SECONDARY_REGION }}              
             resource-type: ''               
-            resource-name: ${{ env.PRIMARY_ASG_NAME }}               
+            resource-name: ${{ env.ASG_NAME }}               
             resource-tag-name: ${{ env.ALB_TAG_KEY }}              
-            resource-tag-value: ${{ env.ALB_TAG_VALUE }}           
-
-        # - name: Retrieve instance status
-        #   id: ec2-status
-        #   run: |
-        #    echo "DNS name of ALB-${{ steps.alb-dns-name.outputs.resource-id }}"
-        #    INSTANCE_STATE=$(aws ec2 describe-instance-status --instance-ids $SECONDARY_EC2_ID --include-all-instance --region $AWS_SECONDARY_REGION | jq -r '.InstanceStatuses[0].InstanceState.Name') 
-        #    echo "Instance state: $INSTANCE_STATE"
-        #    echo "::set-output name=instance_state::$INSTANCE_STATE"
-        #    echo "${{steps.ec2-status.instance_state}}"
+            resource-tag-value: ${{ env.ALB_TAG_VALUE }}                   
                 
-        # - name: Set Route53 weight in alternate region
-        #   id: disaster-recovery
-        #   # if: ${{steps.ec2-status.outputs.instance_state == 'running' }}
-        #   run: |
-        #    # set route 53 records update           
-        #     CHANGE_OUTPUT=$(aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "{ \"Comment\": \"Changes weights of passive region from 0 to 100\",\"Changes\": [{ \"Action\": \"UPSERT\",
-        #     \"ResourceRecordSet\": {\"Name\": \"primary.srepoc.com\", \"Type\": \"CNAME\", \"SetIdentifier\": \"ec2-us-east-2\",\"Weight\": 100,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\"" {{ steps.alb-dns-name.outputs.resource-id }}"\"}]  }}]}")
-        #     echo "Change Output: $CHANGE_OUTPUT"
-        #     CHANGE_ID=$(echo $CHANGE_OUTPUT | jq -r '.ChangeInfo.Id')
-        #     echo "Change ID: $CHANGE_ID"
-        #     echo "::set-output name=change_id::$CHANGE_ID"
+        - name: Set Route53 weight in alternate region
+          id: disaster-recovery        
+          if: ${{ steps.secondary-alb-dns-name.outputs.resource-id }}
+          run: |
+           # set route 53 records update           
+            CHANGE_OUTPUT=$(aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "{ \"Comment\": \"Changes weights of passive region from 0 to 100\",\"Changes\": [{ \"Action\": \"UPSERT\",
+            \"ResourceRecordSet\": {\"Name\": \"primary.srepoc.com\", \"Type\": \"CNAME\", \"SetIdentifier\": \"ec2-us-east-2\",\"Weight\": 100,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\"" {{ steps.alb-dns-name.outputs.resource-id }}"\"}]  }}]}")
+            echo "Change Output: $CHANGE_OUTPUT"
+            CHANGE_ID=$(echo $CHANGE_OUTPUT | jq -r '.ChangeInfo.Id')
+            echo "Change ID: $CHANGE_ID"
+            echo "::set-output name=change_id::$CHANGE_ID"
         
         # - name: Wait for Route53 Change to Become INSYNC
         #   #if: ${{steps.ec2-status.outputs.instance_state == 'running' }}
@@ -77,12 +68,24 @@ jobs:
         #       done
         #       echo "Change $CHANGE_ID is now INSYNC."    
 
-        - name: Set primary region CNAME weight to 0
-          #if: ${{steps.ec2-status.outputs.instance_state == 'running' }}
-          run: |
-               echo "DNS name of ALB-${{ steps.alb-dns-name.outputs.resource-id }}"
-               aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "{ \"Comment\": \"Changes weights of ACTIVE region from 100 to 0\",\"Changes\": [{ \"Action\": \"UPSERT\",
-               \"ResourceRecordSet\": {\"Name\": \"primary.srepoc.com\", \"Type\": \"CNAME\", \"SetIdentifier\": \"ec2\",\"Weight\": 0,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${{ steps.alb-dns-name.outputs.resource-id }} \"}]  }}]}"
+        # - name: Retrieve DNS name of load balancer for primary region
+        #   id: primary-alb-dns-name 
+        #   uses: ./.github/actions/get_resource_by_id
+        #   with:
+        #     aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+        #     aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+        #     aws-region: ${{ env.AWS_PRIMARY_REGION }}              
+        #     resource-type: ''               
+        #     resource-name: ${{ env.ASG_NAME }}               
+        #     resource-tag-name: ${{ env.ALB_TAG_KEY }}              
+        #     resource-tag-value: ${{ env.ALB_TAG_VALUE }}   
+
+        # - name: Set primary region CNAME weight to 0
+        #   #if: ${{steps.ec2-status.outputs.instance_state == 'running' }}
+        #   run: |
+        #        echo "DNS name of ALB-${{ steps.alb-dns-name.outputs.resource-id }}"
+        #        aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "{ \"Comment\": \"Changes weights of ACTIVE region from 100 to 0\",\"Changes\": [{ \"Action\": \"UPSERT\",
+        #        \"ResourceRecordSet\": {\"Name\": \"primary.srepoc.com\", \"Type\": \"CNAME\", \"SetIdentifier\": \"ec2\",\"Weight\": 0,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${{ steps.alb-dns-name.outputs.resource-id }} \"}]  }}]}"
 
         # - name: Set ASG capacity in primary region
         #   id: disaster-recovery-ASG
