@@ -92,5 +92,5 @@ jobs:
         - name: Set ASG capacity in primary region
           id: disaster-recovery-ASG        
           run: |
-            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $PRIMARY_ASG_NAME --desired-capacity 0 --min-size 0 --max-size 0 --region $AWS_PRIMARY_REGION
+            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 0 --min-size 0 --max-size 0 --region $AWS_PRIMARY_REGION
 
