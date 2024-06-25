@@ -81,7 +81,7 @@ jobs:
           #if: ${{steps.ec2-status.outputs.instance_state == 'running' }}
           run: |
                aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "{ \"Comment\": \"Changes weights of ACTIVE region from 100 to 0\",\"Changes\": [{ \"Action\": \"UPSERT\",
-               \"ResourceRecordSet\": {\"Name\": \"primary.srepoc.com\", \"Type\": \"CNAME\", \"SetIdentifier\": \"ec2\",\"Weight\": 0,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\""" {{ steps.alb-dns-name.outputs.resource-id }} "\"}]  }}]}"
+               \"ResourceRecordSet\": {\"Name\": \"primary.srepoc.com\", \"Type\": \"CNAME\", \"SetIdentifier\": \"ec2\",\"Weight\": 0,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" {{ steps.alb-dns-name.outputs.resource-id }} \"}]  }}]}"
 
         # - name: Set ASG capacity in primary region
         #   id: disaster-recovery-ASG
