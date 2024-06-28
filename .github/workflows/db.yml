@@ -171,9 +171,11 @@ jobs:
                 echo "Executing script file: ${file}"
                 export PGPASSWORD=postgres
                 query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
-                #echo "Query output: ${query_output}"
+                # Convert output to lowercase
+                converted_output="${query_output,,}"
+                echo "Query output: ${converted_output}"
 
-                if echo "$query_output" | grep -q "ERROR"; then
+                if echo "$query_output" | grep -q "error"; then
                   can_run_on_prod=false
                   echo "Error in script execution. Can not run on Prod."
                   break;
