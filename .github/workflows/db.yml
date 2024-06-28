@@ -185,14 +185,15 @@ jobs:
               echo "Running scripts on Prod db..."
               # run incremental scripts on Prod db.
               for key in "${!hashmap[@]}"; do             
-              if(($key>$migrationHistoryVersion)); then 
-                
-                file="${MIGRATION_FOLDER}/${hashmap[$key]}"
-                export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-                echo "Executing file- ${file}"
-                psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
-              fi
+                if(($key>$migrationHistoryVersion)); then 
+                  
+                  file="${MIGRATION_FOLDER}/${hashmap[$key]}"
+                  export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+                  echo "Executing file- ${file}"
+                  psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
+                fi
               done
+              echo "Execution completed on Production db."
             fi
                 
       
