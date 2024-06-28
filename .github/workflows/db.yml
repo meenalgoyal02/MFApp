@@ -1,4 +1,4 @@
-name: RDS Migration
+name: DB script execution automation
 
 on: push
 
@@ -31,15 +31,14 @@ jobs:
         run: |
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'          
           query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d poc -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)
+          prod_db_version=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+          echo "Production db version-${prod_db_version}"
           echo "::set-output name=migration_history_version::$query_output"       
           echo "MigrationHistoryVersion=$query_output">> "$GITHUB_OUTPUT" 
           
       - name: Get all the scripts from configured folder
         id: filename_read
         run: |
-          #declare -a scriptFiles
-          #declare -A scriptFileHash
-          #db_updateRequired=false
           migrationHistoryVersion="${{ steps.get_migration_history.outputs.migration_history_version }}"
           echo "migrationHistoryVersion: $migrationHistoryVersion"
           shopt -s dotglob
@@ -55,12 +54,12 @@ jobs:
           for key in "${!scriptFileHash[@]}"; do                    
               if [ "$key" -gt "$migrationHistoryVersion" ];then 
                 db_updateRequired=true
-                echo "File name is:${scriptFileHash[$key]}"                
+                echo "There is a script file with higher version number than Migration History version."                
                 break;
               fi
            done
 
-           echo "Can run further: ${db_updateRequired}"
+          # echo "Can run further: ${db_updateRequired}"
           # Convert scriptFileHash to JSON string         
           hashmap_json="{"
           first=true
@@ -113,25 +112,15 @@ jobs:
       # Performs a clean installation of all dependencies in the `package.json` file      
       - name: Install dependencies
         run: npm ci
-      # - name: Wait for PostgreSQL to be ready
-      #   run: |
-      #     echo "Waiting for PostgreSQL to be ready..."
-      #     for i in {1..30}; do
-      #       if pg_isready -h localhost -p 5432 -U postgres -d shadowDb; then
-      #         echo "PostgreSQL is ready"
-      #         break
-      #       fi
-      #       echo "Waiting..."
-      #       sleep 2
-      #     done
+
       - name: Sort all the script filenames & execute them in order        
         id: scripts_required_to_run
         run: |
             migrationHistoryVersion="${{ needs.migration-required-or-not.outputs.MigrationHistoryVersion }}"
-            echo "migrationHistoryVersion: $migrationHistoryVersion"
+            #echo "migrationHistoryVersion: $migrationHistoryVersion"
             declare -A hashmap
             i=0
-            echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
+            #echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
             hashmap_json=${{ needs.migration-required-or-not.outputs.scriptFileHash }}
             
@@ -147,14 +136,19 @@ jobs:
               fi
             done
 
-            for key in "${!hashmap[@]}"; do
-              echo "Key: $key, Value: ${hashmap[$key]}"
-            done
+            # for key in "${!hashmap[@]}"; do
+            #   echo "Key: $key, Value: ${hashmap[$key]}"
+            # done
 
             #output the hashed set from the step.
             sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
 
             can_run_on_prod=true
+
+            export PGPASSWORD=postgres
+            shadow_db_version=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)
+            echo "Shadow db version-${shadow_db_version}"
+
             # echo "Sorted hashtable contents:"
             for key in "${sorted_keys[@]}"; do              
                 value=${hashmap[$key]}
@@ -163,7 +157,7 @@ jobs:
 
                 export PGPASSWORD=postgres
                 query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
-                echo "Query output: ${query_output}"
+                #echo "Query output: ${query_output}"
 
                 if echo "$query_output" | grep -q "ERROR"; then
                   can_run_on_prod=false
@@ -175,13 +169,18 @@ jobs:
 
             if [ "$can_run_on_prod" = true ]; then
               echo "Running scripts on Prod"
+
+              export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+              prod_db_version=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+              echo "Production db version-${prod_db_version}"
+
               # run incremental scripts on Prod db.
               for key in "${!hashmap[@]}"; do             
               if(($key>$migrationHistoryVersion)); then 
                 
                 file="${MIGRATION_FOLDER}/${hashmap[$key]}"
                 export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-
+                echo "Executing file- ${file}"
                 psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
               fi
               done
