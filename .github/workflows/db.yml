@@ -10,7 +10,8 @@ env:
   PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  MIGRATION_FOLDER: 'src/migrations/ddl'  
+  MIGRATION_FOLDER: 'src/migrations/ddl' 
+  MIGRATION_SEQUENCE: 'DDL SP TRIGGER' 
 jobs:
   migration-required-or-not:
     runs-on: ubuntu-latest
@@ -148,11 +149,11 @@ jobs:
             shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
             echo "PostgreSQL version: $shadow_db_version"
 
-            # echo "Sorted hashtable contents:"
+            echo "Running scripts over Shadow db...."
             for key in "${sorted_keys[@]}"; do              
                 value=${hashmap[$key]}
                 file="${MIGRATION_FOLDER}/${value}"
-                echo "Key: $key, Value: $value,File path:$file"
+                #echo "Key: $key, Value: $value,File path:$file"
 
                 export PGPASSWORD=postgres
                 query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
@@ -164,17 +165,17 @@ jobs:
                   break;
                 fi
             done
-
+            echo "Execution completed on Shadow db."
 
             if [ "$can_run_on_prod" = true ]; then
-              echo "Running scripts on Prod"
+              echo "Running scripts on Prod db..."
 
               export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
               prod_db_version_temp=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
               prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
               echo "Production db version-${prod_db_version}"
 
-              if [ !"$prod_db_version" != "$shadow_db_version" ];then 
+              if [[ "$prod_db_version" != "$shadow_db_version" ]];then 
                 echo "Warning: Prod db version is not same as shadow db version. Please take corrective action."                                
               fi
 
