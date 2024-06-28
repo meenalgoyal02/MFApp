@@ -175,7 +175,7 @@ jobs:
                 converted_output="${query_output,,}"
                 echo "Query output: ${converted_output}"
 
-                if echo "$query_output" | grep -q "error"; then
+                if echo "$converted_output" | grep -q "error"; then
                   can_run_on_prod=false
                   echo "Error in script execution. Can not run on Prod."
                   break;
