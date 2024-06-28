@@ -2,16 +2,17 @@ name: DB script execution automation
 
 on: push
 
-env:
-  AWS_REGION: 'us-east-1'
-  RDS_HOST:  'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
-  RDS_PORT: '5432'
-  RDS_USERNAME: 'postgres'
-  PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  MIGRATION_FOLDER: 'src/migrations/ddl' 
-  MIGRATION_SEQUENCE: 'DDL SP TRIGGER' 
+# env:
+  # AWS_REGION: 'us-east-1'
+  # RDS_HOST:  'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
+  # RDS_PORT: '5432'
+  # RDS_USERNAME: 'postgres'
+  # PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}
+  # RDS_DB: 'poc'
+  # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  # MIGRATION_FOLDER: 'src/migrations/ddl' 
+  # MIGRATION_SEQUENCE: 'DDL SP TRIGGER' 
 jobs:
   migration-required-or-not:
     runs-on: ubuntu-latest
@@ -23,6 +24,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set Environment Variables from File
+        uses: ./.github/actions/setup-environment
+        with:
+            var_file_path: ./.github/variables/db_automation.env
+
       - name: Install dependencies
         run: |
           npm install
@@ -31,7 +37,7 @@ jobs:
         id: get_migration_history
         run: |
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'          
-          query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d poc -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)         
+          query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d $RDS_DB -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)         
           echo "::set-output name=migration_history_version::$query_output"       
           echo "MigrationHistoryVersion=$query_output">> "$GITHUB_OUTPUT" 
           
@@ -125,7 +131,7 @@ jobs:
         id: prod-db
         run: |
           export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-          prod_db_version_temp=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+          prod_db_version_temp=$(psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
           prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
           echo "Production db version-${prod_db_version}"
           echo "::set-output name=version::$prod_db_version"
@@ -192,7 +198,7 @@ jobs:
                   file="${MIGRATION_FOLDER}/${hashmap[$key]}"
                   export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
                   echo "Executing file- ${file}"
-                  psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
+                  psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
                 fi
               done
               echo "Execution completed on Production db."
