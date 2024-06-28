@@ -144,8 +144,11 @@ jobs:
             can_run_on_prod=true
 
             export PGPASSWORD=postgres
-            shadow_db_version=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)
+            shadow_db_version=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
             echo "Shadow db version-${shadow_db_version}"
+
+            major_minor_version=$(echo $shadow_db_version | awk -F. '{print $1 "." $2}')
+            echo "PostgreSQL version: $major_minor_version"
 
             # echo "Sorted hashtable contents:"
             for key in "${sorted_keys[@]}"; do              
