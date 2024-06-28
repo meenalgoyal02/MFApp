@@ -30,13 +30,7 @@ jobs:
         id: get_migration_history
         run: |
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'          
-          query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d poc -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)
-          
-          shadow_db_version=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d poc -t -c "show server_version;" 2>&1)            
-          echo "Shadow db version-${shadow_db_version}"
-          major_minor_version=$(echo $shadow_db_version | awk '{print $1}' | cut -d '.' -f1,2)
-          echo "PostgreSQL version: $major_minor_version"
-          
+          query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d poc -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)         
           echo "::set-output name=migration_history_version::$query_output"       
           echo "MigrationHistoryVersion=$query_output">> "$GITHUB_OUTPUT" 
           
@@ -150,11 +144,9 @@ jobs:
             can_run_on_prod=true
 
             export PGPASSWORD=postgres
-            shadow_db_version=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
-            echo "Shadow db version-${shadow_db_version}"
-
-            major_minor_version=$(echo $shadow_db_version | awk '{print $1}' | cut -d '.' -f1,2)
-            echo "PostgreSQL version: $major_minor_version"
+            shadow_db_version_temp=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
+            shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+            echo "PostgreSQL version: $shadow_db_version"
 
             # echo "Sorted hashtable contents:"
             for key in "${sorted_keys[@]}"; do              
@@ -178,7 +170,8 @@ jobs:
               echo "Running scripts on Prod"
 
               export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-              prod_db_version=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+              prod_db_version_temp=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+              prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
               echo "Production db version-${prod_db_version}"
 
               if [ !"$prod_db_version" != "$shadow_db_version" ];then 
