@@ -112,6 +112,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Get Shadow db version
+        id: shadow-db
+        run: |
+          export PGPASSWORD=postgres
+          shadow_db_version_temp=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
+          shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+          echo ":set-output name=version::$shadow_db_version"
+          echo "Shadow db version: $shadow_db_version"
+
+      - name: Get Production db version
+        id: prod-db
+        run: |
+          export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+          prod_db_version_temp=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+          prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+          echo "Production db version-${prod_db_version}"
+          echo ":set-output name=version::$prod_db_version"
+
+      - name: Compare Shadow vs Prod db scripts
+        run: |
+          if [[ "${{steps.shadow-db.version}}" != "${{steps.prod-db.version}}" ]];then 
+           echo "Warning: Prod db version is not same as shadow db version. Please take corrective action."                                
+          fi
+     
       - name: Sort all the script filenames & execute them in order        
         id: scripts_required_to_run
         run: |
@@ -144,10 +168,10 @@ jobs:
 
             can_run_on_prod=true
 
-            export PGPASSWORD=postgres
-            shadow_db_version_temp=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
-            shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
-            echo "PostgreSQL version: $shadow_db_version"
+            # export PGPASSWORD=postgres
+            # shadow_db_version_temp=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
+            # shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+            # echo "PostgreSQL version: $shadow_db_version"
 
             echo "Running scripts over Shadow db...."
             for key in "${sorted_keys[@]}"; do              
@@ -170,14 +194,14 @@ jobs:
             if [ "$can_run_on_prod" = true ]; then
               echo "Running scripts on Prod db..."
 
-              export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-              prod_db_version_temp=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
-              prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
-              echo "Production db version-${prod_db_version}"
+              # export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+              # prod_db_version_temp=$(psql -h $RDS_HOST -d poc -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+              # prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+              # echo "Production db version-${prod_db_version}"
 
-              if [[ "$prod_db_version" != "$shadow_db_version" ]];then 
-                echo "Warning: Prod db version is not same as shadow db version. Please take corrective action."                                
-              fi
+              # if [[ "$prod_db_version" != "$shadow_db_version" ]];then 
+              #   echo "Warning: Prod db version is not same as shadow db version. Please take corrective action."                                
+              # fi
 
               # run incremental scripts on Prod db.
               for key in "${!hashmap[@]}"; do             
