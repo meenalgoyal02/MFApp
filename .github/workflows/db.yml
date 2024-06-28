@@ -132,7 +132,7 @@ jobs:
 
       - name: Compare Shadow vs Prod db scripts
         run: |
-          if [[ "${{steps.shadow-db.version}}" != "${{steps.prod-db.version}}" ]];then 
+          if [[ "${{ steps.shadow-db.version }}" != "${{ steps.prod-db.version }}" ]];then 
            echo "Warning: Prod db version is not same as shadow db version. Please take corrective action."                                
           fi
      
