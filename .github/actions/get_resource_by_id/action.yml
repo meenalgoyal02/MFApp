@@ -1,4 +1,4 @@
-# .github/actions/aws-cli-action/action.yml
+# .github/actions/get_resource_by_id/action.yml
 name: 'Retrieve id of resource by name or tag key-value pair'
 description: 'This action retrieves the id/dns name etc of the resource'
 inputs:
