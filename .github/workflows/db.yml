@@ -3,7 +3,7 @@ name: DB script execution automation
 on: push
 
 env:
-  
+
   RDS_HOST:  'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
   RDS_PORT: '5432'
   RDS_USERNAME: 'postgres'
@@ -24,10 +24,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set Environment Variables from File
-        uses: ./.github/actions/setup-environment
-        with:
-            var_file_path: ./.github/variables/db_automation.env
+      # - name: Set Environment Variables from File
+      #   uses: ./.github/actions/setup-environment
+      #   with:
+      #       var_file_path: ./.github/variables/db_automation.env
 
       - name: Install dependencies
         run: |
