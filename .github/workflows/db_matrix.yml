@@ -43,8 +43,8 @@ jobs:
         id: collect-results
         run: |
           echo "${{ matrix.configuration.VAR1 }}_${{ matrix.configuration.VAR2 }}=${{ steps.run-tests.outputs.result }}" >> $GITHUB_ENV
-        outputs:
-          results: ${{ steps.collect-results.outputs.results }}
+        # outputs:
+        #   results: ${{ steps.collect-results.outputs.results }}
 
   process-results:
     runs-on: ubuntu-latest
