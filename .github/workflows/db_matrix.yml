@@ -36,7 +36,7 @@ jobs:
         run: |
           echo "Running tests with VAR1=${{ matrix.configuration.VAR1 }} and VAR2=${{ matrix.configuration.VAR2 }}"
           # Run your test command here and capture the output
-          result=$(npm test -- --var1=${{ matrix.configuration.VAR1 }} --var2=${{ matrix.configuration.VAR2 }})
+          result="${{ matrix.configuration.VAR1 }},${{ matrix.configuration.VAR2 }}"
           echo "result=$result" >> $GITHUB_ENV
 
       - name: Collect results
