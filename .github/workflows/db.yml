@@ -6,7 +6,7 @@ env:
   PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  
+
 jobs:
   migration-required-or-not:
     runs-on: ubuntu-latest
@@ -111,6 +111,12 @@ jobs:
       # Performs a clean installation of all dependencies in the `package.json` file      
       - name: Install dependencies
         run: npm ci
+
+      - name: Set Environment Variables from File
+        uses: ./.github/actions/setup-environment
+        with:
+            var_file_path: ./.github/variables/db_automation.env
+
 
       - name: Get Shadow db version
         id: shadow-db
