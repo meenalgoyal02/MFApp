@@ -1,50 +1,42 @@
-name: Retrieve id of resource by name or tag key-value pair
-author: Meenal Goyal
-description: This action retrieves the id/dns name etc of the resource
+# .github/actions/get_resource_by_id/action.yml
+name: 'Retrieve id of resource by name or tag key-value pair'
+description: 'This action retrieves the id/dns name etc of the resource'
 inputs:
-    aws-access-key-id:
-        description: 'AWS Access Key ID'
-        required: true
-    aws-secret-access-key:
+  aws-access-key-id:
+      description: 'AWS Access Key ID'
+      required: true
+  aws-secret-access-key:
         description: 'AWS Secret Access Key'
         required: true
-    aws-region:
-        description: 'AWS Region'
+  aws-region:
+      description: 'AWS Region'
+      required: true
+  resource-type:
+        description: 'The type of resource for whome id is required.Possible values are: ALB'
+        required: false
+        default: 'ALB'
+  resource-name:
+        description: 'Resource name for which id is needed'
         required: true
-    resource-type:
-         description: 'The type of resource for whome id is required.Possible values are: ALB'
-         required: false
-         default: 'ALB'
-    resource-name:
-         description: 'Resource name for which id is needed'
-         required: true
-         default: ''
-    resource-tag-name:
-         description: 'Resource tag name'
-         required: false
-         default: ''
-    resource-tag-value:
-         description: 'Resource tag value'
-         required: false
-         default: ''
-
+        default: ''
+  resource-tag-name:
+        description: 'Resource tag name'
+        required: false
+        default: ''
+  resource-tag-value:
+        description: 'Resource tag value'
+        required: false
+        default: ''
 outputs:
-   resource-id:
-      description: 'Resource id'
-    #   value:
-    #     ${{steps.get-id.outputs.resource_id}}
-
-runs: 
-    using: composite     
-    env:
-        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
-        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
-        AWS_REGION: ${{ inputs.aws-region }}      
-    steps:
-     - name: get-id        
-        shell: bash
-        run: |
-        
+  resource-id:
+    description: 'Resource id'
+    value: ${{ steps.retrieve-dns-name.outputs.resource-id }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Retrieve DNS name
+      id: retrieve-dns-name
+      run:  |        
         if [ -z "${{ inputs.resource-name }}" ]; then
             # Retrieve by tag
             load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --region $inputs.aws-region --output text)
@@ -73,14 +65,5 @@ runs:
             dns_name=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
             echo "DNS name by ALB name:-$dns_name"
         fi;
-        echo "resource_id=$dns_name">> "$GITHUB_OUTPUT" 
-# env:
-#     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#     AWS_REGION: 'us-east-1'
-#     TAG_KEY: 'Purpose'
-#     TAG_VALUE: 'SRE-POC'
-#     ALB_NAME: 'pocSre'  
-branding:
-  icon: 'code'
-  color: 'green'
+        echo "resource-id=$dns_name">> "$GITHUB_OUTPUT" 
+      shell: bash
