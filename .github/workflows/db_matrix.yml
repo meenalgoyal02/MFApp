@@ -44,7 +44,7 @@ jobs:
         run: |
           echo "${{ matrix.configuration.VAR1 }}_${{ matrix.configuration.VAR2 }}=${{ steps.run-tests.outputs.result }}" >> $GITHUB_ENV
         # outputs:
-        #   results: ${{ steps.collect-results.outputs.results }}
+        #    results: ${{ steps.collect-results.outputs.results }}
 
   process-results:
     runs-on: ubuntu-latest
@@ -60,7 +60,8 @@ jobs:
         run: |
           echo "Processing results..."
           # Loop through the results
-          for var in ${!RESULTS[@]}; do
-            echo "Processing result for $var: ${RESULTS[$var]}"
-            # Add your processing logic here
-          done
+          echo ${RESULTS[@]}
+        #   for var in ${!RESULTS[@]}; do
+        #     echo "Processing result for $var: ${RESULTS[$var]}"
+        #     # Add your processing logic here
+        #   done
