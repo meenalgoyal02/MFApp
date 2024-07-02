@@ -41,20 +41,15 @@ runs:
         tagValue=${{ inputs.resource-tag-value }}
 
         if [ -z "${{ inputs.resource-name }}" ]; then
-         
-          
             # Retrieve by tag
             load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --region ${{ inputs.aws-region }} --output text)
-            
-            echo $load_balancer_arns
 
             # Step 2: Find the load balancer ARN by tag name
             for arn in $load_balancer_arns; do
                  tags=$(aws elbv2 describe-tags --resource-arns $arn --query 'TagDescriptions[0].Tags' --region ${{ inputs.aws-region }} --output json)
                 
-                name=$(echo $tags | jq -r --arg TAG_KEY "$tagKey" --arg TAG_VALUE "$tagValue" '.[] | select(.Key == $TAG_KEY and .Value == "SRE-POC") | .Value')
+                name=$(echo $tags | jq -r --arg TAG_KEY "$tagKey" --arg TAG_VALUE "$tagValue" '.[] | select(.Key == $TAG_KEY and .Value == $TAG_VALUE) | .Value')
 
-              
                   if [ "${name}" == "${tagValue}" ]; then
                       load_balancer_arn=$arn
                       break
