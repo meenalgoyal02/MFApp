@@ -19,9 +19,6 @@ jobs:
             subject: Test Email
             body:  |
                 The GitHub Actions job failed. Please check the logs for more details.
-                Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            html_body: |
-                <h1>This is a test email</h1>
-                <p>Test Paragraph</p>
+                Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}            
            
         
