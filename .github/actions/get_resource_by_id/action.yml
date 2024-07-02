@@ -52,11 +52,11 @@ runs:
                 
                 #echo $tags[@]
 
-                if [ ${#tags[@]} != 0 ]; then
-                   
-                    name=$(echo $tags | jq -r --arg TAG_KEY $tagKey --arg TAG_VALUE $tagValue '.[] | select(.Key == "${tagKey}") | .Value')
-                    
+                
                     echo "Result:"
+                    name=$(echo $tags | jq -r --arg TAG_KEY $tagKey --arg TAG_VALUE $tagValue '.[] | select(.Key == "${tagKey}")| .Value')
+                    
+                   
                     echo "${name}"
                     #echo "${tagValue}"
 
@@ -66,7 +66,7 @@ runs:
                       load_balancer_arn=$arn
                       break
                   fi
-                fi
+                
             done
 
             # Check if the load balancer ARN was found
