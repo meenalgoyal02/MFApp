@@ -36,10 +36,12 @@ runs:
   steps:
     - name: Retrieve DNS name
       id: retrieve-dns-name
-      run:  |        
+      run:  |  
+         tagKey=${{ inputs.resource-tag-name }}
+         tagValue=${{ inputs.resource-tag-value }}
+
         if [ -z "${{ inputs.resource-name }}" ]; then
-          tagKey=${{ inputs.resource-tag-name }}
-          tagValue=${{ inputs.resource-tag-value }}
+         
           
             # Retrieve by tag
             load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --region ${{ inputs.aws-region }} --output text)
@@ -71,7 +73,7 @@ runs:
 
             # Check if the load balancer ARN was found
             if [ -z "$load_balancer_arn" ]; then
-              echo "Load balancer with tag ${{ inputs.resource-tag-name }}=${{ inputs.resource-tag-value }} not found."
+              echo "Load balancer with tag ${tagKey}=${tagValue} not found."
               exit 1
             fi
 
