@@ -2,13 +2,10 @@ name: Recovery steps in Secondary region.
 on: workflow_dispatch
 
 env:
-    AWS_REGION: 'us-east-2'
-    EC2_ID: 'i-0550bfc70237ff835'
+    AWS_REGION: 'us-east-2'    
     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     ASG_NAME: 'pocSre'    
-    AWS_PRIMARY_REGION: 'us-east-1'
-    AWS_SECONDARY_REGION: 'us-east-2'
     HOSTED_ZONE_ID: 'Z02212032GSWAL5ZYLGZ4'
     ALB_TAG_KEY: 'Purpose'
     ALB_TAG_VALUE: 'SRE-POC'
@@ -30,15 +27,15 @@ jobs:
             pip install awscli
         - run: |
            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 2 --min-size 0 --max-size 3 --region $AWS_REGION
-           #aws ec2 start-instances --instance-ids $EC2_ID --region $AWS_REGION
+          
         - name: Retrieve DNS name of load balancer for secondary region
           id: secondary-alb-dns-name 
           uses: ./.github/actions/get_resource_by_id
           with:
             aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
             aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
-            aws-region: ${{ env.AWS_SECONDARY_REGION }}              
-            resource-type: ''               
+            aws-region: ${{ env.AWS_REGION }}              
+            resource-type: 'ALB'               
             resource-name: ''               
             resource-tag-name: ${{ env.ALB_TAG_KEY }}              
             resource-tag-value: ${{ env.ALB_TAG_VALUE }}                   
