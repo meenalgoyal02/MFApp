@@ -52,7 +52,7 @@ runs:
                 
                 #echo $tags[@]
      
-                name=$(echo $tags | jq -r --arg TAG_KEY "$tagKey" --arg TAG_VALUE "$tagValue" '.[] | select(.Key == ${tagKey})')
+                name=$(echo $tags | jq -r --arg TAG_KEY "$tagKey" --arg TAG_VALUE "$tagValue" '.[] | select(.Key == $tagKey) | .Value')
                 
                 echo "Result:"
                 #echo $name
