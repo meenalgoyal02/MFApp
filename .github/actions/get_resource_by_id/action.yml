@@ -37,8 +37,8 @@ runs:
     - name: Retrieve DNS name
       id: retrieve-dns-name
       run:  |  
-         tagKey=${{ inputs.resource-tag-name }}
-         tagValue=${{ inputs.resource-tag-value }}
+        tagKey=${{ inputs.resource-tag-name }}
+        tagValue=${{ inputs.resource-tag-value }}
 
         if [ -z "${{ inputs.resource-name }}" ]; then
          
