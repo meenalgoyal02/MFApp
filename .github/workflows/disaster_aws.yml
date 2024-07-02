@@ -31,13 +31,9 @@ jobs:
         
         - name: Verify URL
           run: |
-           url="myurl.dxlearning.com"
+           url='primary.srepoc.con'
            HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$url")
-           if [ "$HTTP_STATUS" -eq 200 ]; then
-              echo "The URL $URL is responsive."
-            else
-              echo "The URL $URL is not responsive. HTTP Status: $HTTP_STATUS"
-            fi
+           echo "HTTP Status- ${HTTP_STATUS}"
 
         # - name: Retrieve DNS name of load balancer for secondary region
         #   id: secondary-alb-dns-name 
