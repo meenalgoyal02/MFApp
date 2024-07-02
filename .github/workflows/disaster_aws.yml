@@ -13,6 +13,8 @@ env:
   CNAME: 'primary.srepoc.com'
   PRIMARY_CNAME_IDENTIFIER: 'ec2'
   SECONDARY_CNAME_IDENTIFIER: 'ec2-us-east-2'
+  SENDER_EMAIL_ID: 'meenalgoyal02@gmail.com'
+  RECEIVER_EMAIL_ID: 'meenalgoyal02@gmail.com' 
 
 jobs:
     aws-cli-in-github-actions:
@@ -29,45 +31,45 @@ jobs:
             python -m pip install --upgrade pip
             pip install awscli               
 
-        - name: Retrieve DNS name of load balancer for secondary region
-          id: secondary-alb-dns-name 
-          uses: ./.github/actions/get_resource_by_id
-          with:
-            aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
-            aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
-            aws-region: ${{ env.AWS_SECONDARY_REGION }}              
-            resource-type: ''               
-            resource-name: ''               
-            resource-tag-name: ${{ env.ALB_TAG_KEY }}              
-            resource-tag-value: ${{ env.ALB_TAG_VALUE }}                   
+        # - name: Retrieve DNS name of load balancer for secondary region
+        #   id: secondary-alb-dns-name 
+        #   uses: ./.github/actions/get_resource_by_id
+        #   with:
+        #     aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+        #     aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+        #     aws-region: ${{ env.AWS_SECONDARY_REGION }}              
+        #     resource-type: ''               
+        #     resource-name: ''               
+        #     resource-tag-name: ${{ env.ALB_TAG_KEY }}              
+        #     resource-tag-value: ${{ env.ALB_TAG_VALUE }}                   
                 
-        - name: Set Route53 weight in alternate region
-          id: disaster-recovery        
-          if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' }}
-          run: |
-           # set route 53 records update           
-            CHANGE_OUTPUT=$(aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "{ \"Comment\": \"Changes weights of passive region from 0 to 100\",\"Changes\": [{ \"Action\": \"UPSERT\",
-            \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.SECONDARY_CNAME_IDENTIFIER }}\",\"Weight\": 100,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${{ steps.secondary-alb-dns-name.outputs.resource-id }} \"}]  }}]}")
-            echo "Change Output: $CHANGE_OUTPUT"
-            CHANGE_ID=$(echo $CHANGE_OUTPUT | jq -r '.ChangeInfo.Id')
-            echo "Change ID: $CHANGE_ID"
-            echo "::set-output name=change_id::$CHANGE_ID"
+        # - name: Set Route53 weight in alternate region
+        #   id: disaster-recovery        
+        #   if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' }}
+        #   run: |
+        #    # set route 53 records update           
+        #     CHANGE_OUTPUT=$(aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "{ \"Comment\": \"Changes weights of passive region from 0 to 100\",\"Changes\": [{ \"Action\": \"UPSERT\",
+        #     \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.SECONDARY_CNAME_IDENTIFIER }}\",\"Weight\": 100,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${{ steps.secondary-alb-dns-name.outputs.resource-id }} \"}]  }}]}")
+        #     echo "Change Output: $CHANGE_OUTPUT"
+        #     CHANGE_ID=$(echo $CHANGE_OUTPUT | jq -r '.ChangeInfo.Id')
+        #     echo "Change ID: $CHANGE_ID"
+        #     echo "::set-output name=change_id::$CHANGE_ID"
         
-        - name: Wait for Route53 Change to Become INSYNC
-          id: wait-for-insync
-          run: |
-              CHANGE_ID=${{ steps.disaster-recovery.outputs.change_id }}
-              STATUS="PENDING"
-              while [ "$STATUS" != "INSYNC" ]; do
-                echo "Waiting for change $CHANGE_ID to become INSYNC..."
-                STATUS=$(aws route53 get-change --id $CHANGE_ID | jq -r '.ChangeInfo.Status')
-                echo "Current status: $STATUS"
-                if [ "$STATUS" != "INSYNC" ]; then
-                  echo "Not in sync yet. Sleeping for 30 seconds..."
-                  sleep 30
-                fi
-              done
-              echo "Change $CHANGE_ID is now INSYNC."    
+        # - name: Wait for Route53 Change to Become INSYNC
+        #   id: wait-for-insync
+        #   run: |
+        #       CHANGE_ID=${{ steps.disaster-recovery.outputs.change_id }}
+        #       STATUS="PENDING"
+        #       while [ "$STATUS" != "INSYNC" ]; do
+        #         echo "Waiting for change $CHANGE_ID to become INSYNC..."
+        #         STATUS=$(aws route53 get-change --id $CHANGE_ID | jq -r '.ChangeInfo.Status')
+        #         echo "Current status: $STATUS"
+        #         if [ "$STATUS" != "INSYNC" ]; then
+        #           echo "Not in sync yet. Sleeping for 30 seconds..."
+        #           sleep 30
+        #         fi
+        #       done
+        #       echo "Change $CHANGE_ID is now INSYNC."    
 
         - name: Retrieve DNS name of load balancer for primary region
           id: primary-alb-dns-name 
@@ -117,28 +119,34 @@ jobs:
             aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 0 --min-size 0 --max-size 0 --region $AWS_PRIMARY_REGION
          
         - name: Verify whether the URL is down or not
+          continue-on-error: true
           id: verify-region-is-down
           run: |  
             sleep 60                   
             HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
             echo "HTTP Status- ${HTTP_STATUS}"
-            if [ "$HTTP_STATUS" -eq 200 ]; then
-              echo "::set-output name=change_id::$HTTP_STATUS"
+            if [ "$HTTP_STATUS" -eq 503 ]; then
+              echo "::set-output name=Region-down::true"
             else
-              echo ""
+              echo "::set-output name=Region-down::false"
             fi
 
-        - name: Send notification email
+        - name: Send notification email          
           uses: dawidd6/action-send-mail@v3
           with:
               server_address: smtp.gmail.com
               server_port: 465
               secure: true
-              from:  meenalgoyal02@gmail.com
-              to: meenalgoyal02@gmail.com
-              username:  meenalgoyal02@gmail.com
+              from:  ${{ env.SENDER_EMAIL_ID }}
+              to: ${{ env.RECEIVER_EMAIL_ID }}
+              username:  ${{env.SENDER_EMAIL_ID}}
               password: ${{ secrets.SMTP_PASSWORD }}
-              subject: Test Email
+              subject: |
+                  if [[ "${{ steps.verify-region-is-down.outputs.Region-down }}" =="true" ]]; then 
+                      Primary region is down for Repository- "${{ github.repository }}"
+                  else
+                      Failed in setting Primary region down.                            
+                  fi 
               body:  |
                   Gameday Preparation completed with the run of GitHub workflow. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
                   Please check the application and take recovery steps, as required.
