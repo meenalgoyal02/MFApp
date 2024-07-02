@@ -145,7 +145,7 @@ jobs:
               to: ${{ env.RECEIVER_EMAIL_ID }}
               username:  ${{env.SENDER_EMAIL_ID}}
               password: ${{ secrets.SMTP_PASSWORD }}
-              subject: "{{ steps.verify-region-is-down.outputs.Email-subject }}                  
+              subject: ${{ steps.verify-region-is-down.outputs.Email-subject }}                  
               body:  |
                   Gameday Preparation completed with the run of GitHub workflow. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
                   Please check the application and take recovery steps, as required.
