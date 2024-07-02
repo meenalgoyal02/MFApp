@@ -128,7 +128,7 @@ jobs:
             if [ "$HTTP_STATUS" -eq 503 ]; then
               echo "Region down completed."
               echo "::set-output name=Region-down::true"
-              echo "::set-output name=Email-subject:: Primary region is down for Repository- "${{ github.repository }}"
+              echo "::set-output name=Email-subject:: Primary region is down for Repository- ${{ github.repository }}"
             else
               echo "Region down could not be completed."
               echo "::set-output name=Region-down::false"
