@@ -31,7 +31,7 @@ jobs:
         
         - name: Verify URL
           run: |
-           url='myurl.dxlearning.com'
+           url="myurl.dxlearning.com"
            HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$url")
            if [ "$HTTP_STATUS" -eq 200 ]; then
               echo "The URL $URL is responsive."
