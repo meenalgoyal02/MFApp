@@ -48,10 +48,10 @@ runs:
                 tags=$(aws elbv2 describe-tags --resource-arns $arn --query 'TagDescriptions[0].Tags' --region ${{ inputs.aws-region }} --output json)
                 
                 if [ ${#tags[@]} != 0 ]; then
-                    temp=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" '.[])
+                    temp=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" )
                     
                     echo $temp
-                    echo ${#temp[@]}
+                    #echo ${#temp[@]}
                     
 
                     name=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" '.[] | select(.Key == ${{ inputs.resource-tag-name }} and .Value == ${{ inputs.resource-tag-value }}) | .Value')
