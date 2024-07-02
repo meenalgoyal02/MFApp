@@ -31,7 +31,7 @@ jobs:
         
         - name: Verify URL
           run: |
-           url='primary.srepoc.com'
+           url='myurl.dxlearning.com'
            #HTTP_STATUS=$(curl -il "$url"| grep "^HTTP\/")
            HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "$url")
            echo "HTTP Status- ${HTTP_STATUS}"
