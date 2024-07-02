@@ -54,7 +54,7 @@ runs:
 
                 if [ ${#tags[@]} != 0 ]; then
                    
-                    name=$(echo $tags | jq -r --arg TAG_KEY $tagKey --arg TAG_VALUE $tagValue '.[] | select(.Key == "${tagKey}" and .Value == "${tagValue}") | .Value')
+                    name=$(echo $tags | jq -r --arg TAG_KEY $tagKey --arg TAG_VALUE $tagValue '.[] | select(.Key == "${tagKey}") | .Value')
                     
                     echo "Result:"
                     echo "${name}"
