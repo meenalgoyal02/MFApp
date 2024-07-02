@@ -41,6 +41,8 @@ runs:
             # Retrieve by tag
             load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --region ${{ inputs.aws-region }} --output text)
             
+            echo $load_balancer_arns
+
             # Step 2: Find the load balancer ARN by tag name
             for arn in $load_balancer_arns; do
                 tags=$(aws elbv2 describe-tags --resource-arns $arn --query 'TagDescriptions[0].Tags' --region ${{ inputs.aws-region }} --output json)
