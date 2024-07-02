@@ -31,7 +31,7 @@ jobs:
         
         - name: Verify URL
           run: |
-           url='primary.srepoc.con'
+           url='primary.srepoc.com'
            HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$url")
            echo "HTTP Status- ${HTTP_STATUS}"
 
