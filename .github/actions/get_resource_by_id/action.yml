@@ -56,7 +56,7 @@ runs:
                    
                     name=$(echo $tags | jq -r --arg TAG_KEY $tagKey --arg TAG_VALUE $tagValue '.[] | select(.Key == "${tagKey}" ) | .Value')
                     
-                    echo $name[@]
+                    echo "${name}"
                     #echo "${tagValue}"
 
                   #   name=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" '.[] | select(.Key == ${{ inputs.resource-tag-name }} and .Value == ${{ inputs.resource-tag-value }}) | .Value')
