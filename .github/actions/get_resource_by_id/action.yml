@@ -39,6 +39,7 @@ runs:
       run:  |        
         if [ -z "${{ inputs.resource-name }}" ]; then
           tagKey=${{ inputs.resource-tag-name }}
+          tagValue=${{ inputs.resource-tag-value }}
           echo ${tagKey}
             # Retrieve by tag
             load_balancer_arns=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[*].LoadBalancerArn' --region ${{ inputs.aws-region }} --output text)
@@ -50,7 +51,7 @@ runs:
                 tags=$(aws elbv2 describe-tags --resource-arns $arn --query 'TagDescriptions[0].Tags' --region ${{ inputs.aws-region }} --output json)
                 
                 if [ ${#tags[@]} != 0 ]; then
-                    temp=$(echo $tags | jq -r --arg TAG_KEY $tagKey --arg TAG_VALUE "${{ inputs.resource-tag-value }}" '.[] | select(.Key == "${tagKey}")')
+                    name=$(echo $tags | jq -r --arg TAG_KEY $tagKey --arg TAG_VALUE $tagValue '.[] | select(.Key == "${tagKey}") and .Value == "${tagValue}") | .Value')
                     
                     echo $temp
                     echo ${#temp[@]}
@@ -58,10 +59,10 @@ runs:
 
                   #   name=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" '.[] | select(.Key == ${{ inputs.resource-tag-name }} and .Value == ${{ inputs.resource-tag-value }}) | .Value')
               
-                  # if [ "$name" == "${{ inputs.resource-tag-value }}" ]; then
-                  #     load_balancer_arn=$arn
-                  #     break
-                  # fi
+                  if [ "$name" == "${tagValue}" ]; then
+                      load_balancer_arn=$arn
+                      break
+                  fi
                 fi
             done
 
