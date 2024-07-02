@@ -32,8 +32,8 @@ jobs:
         - name: Verify URL
           run: |
            url='primary.srepoc.com'
-           HTTP_STATUS=$(curl -il "$url"| grep "^HTTP\/")
-           #HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$url")
+           #HTTP_STATUS=$(curl -il "$url"| grep "^HTTP\/")
+           HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "$url")
            echo "HTTP Status- ${HTTP_STATUS}"
 
         # - name: Retrieve DNS name of load balancer for secondary region
