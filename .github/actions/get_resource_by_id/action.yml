@@ -54,7 +54,8 @@ runs:
 
                 
                     echo "Result:"
-                    name=$(echo $tags | jq -r --arg TAG_KEY $tagKey --arg TAG_VALUE $tagValue '.[] | select(.Key == "${tagKey}")| .Value')
+                          
+                    name=$(echo $tags | jq -r --arg TAG_KEY "$tagKey" --arg TAG_VALUE "$tagValue" '.[] | select(.Key == $tagKey)')
                     
                    
                     echo $name[@]
