@@ -51,15 +51,15 @@ runs:
                     temp=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" )
                     
                     echo $temp
-                    #echo ${#temp[@]}
+                    echo ${#temp[@]}
                     
 
-                    name=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" '.[] | select(.Key == ${{ inputs.resource-tag-name }} and .Value == ${{ inputs.resource-tag-value }}) | .Value')
+                  #   name=$(echo $tags | jq -r --arg TAG_KEY "${{ inputs.resource-tag-name }}" --arg TAG_VALUE "${{ inputs.resource-tag-value }}" '.[] | select(.Key == ${{ inputs.resource-tag-name }} and .Value == ${{ inputs.resource-tag-value }}) | .Value')
               
-                  if [ "$name" == "${{ inputs.resource-tag-value }}" ]; then
-                      load_balancer_arn=$arn
-                      break
-                  fi
+                  # if [ "$name" == "${{ inputs.resource-tag-value }}" ]; then
+                  #     load_balancer_arn=$arn
+                  #     break
+                  # fi
                 fi
             done
 
