@@ -33,7 +33,11 @@ jobs:
           run: |
            url='myurl.dxlearning.com'
            HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$url")
-           echo "HTTP Status- ${HTTP_STATUS}"
+           if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "The URL $URL is responsive."
+            else
+              echo "The URL $URL is not responsive. HTTP Status: $HTTP_STATUS"
+            fi
 
         # - name: Retrieve DNS name of load balancer for secondary region
         #   id: secondary-alb-dns-name 
