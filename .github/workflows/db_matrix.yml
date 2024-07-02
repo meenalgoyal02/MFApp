@@ -6,62 +6,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        configuration:
-          - VAR1: value1a
-            VAR2: value2a
-          - VAR1: value1b
-            VAR2: value2b
-          - VAR1: value1c
-            VAR2: value2c
-
-    outputs:
-      matrix-results: ${{ steps.collect-results.outputs.results }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run tests with different configurations
-        id: run-tests
+      - name: Run some build step
         run: |
-          echo "Running tests with VAR1=${{ matrix.configuration.VAR1 }} and VAR2=${{ matrix.configuration.VAR2 }}"
-          # Run your test command here and capture the output
-          result="${{ matrix.configuration.VAR1 }},${{ matrix.configuration.VAR2 }}"
-          echo "result=$result" >> $GITHUB_ENV
+          # Simulate a build step
+          echo "Running build step..."
+          # Simulate a failure
+          exit 1
 
-      - name: Collect results
-        id: collect-results
-        run: |
-          echo "${{ matrix.configuration.VAR1 }}_${{ matrix.configuration.VAR2 }}=${{ steps.run-tests.outputs.result }}" >> $GITHUB_ENV
-        # outputs:
-        #    results: ${{ steps.collect-results.outputs.results }}
-
-  process-results:
+  notify:
     runs-on: ubuntu-latest
     needs: build
-    env:
-      RESULTS: ${{ needs.build.outputs.matrix-results }}
+    if: failure()
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Process results
-        run: |
-          echo "Processing results..."
-          # Loop through the results
-          echo ${RESULTS[@]}
-        #   for var in ${!RESULTS[@]}; do
-        #     echo "Processing result for $var: ${RESULTS[$var]}"
-        #     # Add your processing logic here
-        #   done
+      - name: Send email notification
+        uses: mikepenz/action-mail@v1
+        with:
+          # SMTP server configuration
+          from: 'meenalgoyal02@gmail.com'
+          to: 'meenal.goyal@nagarro.com'
+          subject: 'GitHub Actions Job Failed'
+          body: 'The GitHub Actions job failed. Please check the logs for more details.'
+          server_address: 'smtp.gmail.com'
+          server_port: 587
+          username: 'meenalgoyal02@gmail.com'
+          password: ${{ secrets.SMTP_PASSWORD }}
+          secure: true
