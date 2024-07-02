@@ -1,5 +1,5 @@
 name: Recovery steps in Secondary region.
-on: workflow_dispatch
+on: push
 
 env:
     AWS_REGION: 'us-east-1'    
