@@ -24,15 +24,15 @@ jobs:
 
     steps:
       - name: Send email notification
-        uses: dawidd6/action-send-mail@v3
+        uses: wadeww/send-email-action@master
         with:
             server_address: smtp.gmail.com
-            server_port: 587
+            port: 465
             username: meenalgoyal02@gmail.com
             password: ${{ secrets.SMTP_PASSWORD }}
             subject: GitHub Actions Job Failed
             body: The GitHub Actions job failed. Please check the logs for more details.
             to: meenal.goyal@nagarro.com
             from: meenalgoyal02@gmail.com
-            secure: true
+           
         
