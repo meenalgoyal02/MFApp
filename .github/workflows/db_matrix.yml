@@ -9,7 +9,7 @@ jobs:
       - name: Send email notification
         uses: hilarion5/send-mail@v1
         with:
-            smtp-server: smtp.example.com
+            smtp-server: smtp.gmail.com
             smtp-port: 465
             smtp-secure: true
             from-email:  meenalgoyal02@gmail.com
