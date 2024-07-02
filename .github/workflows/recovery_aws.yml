@@ -1,4 +1,4 @@
-name: Update ASG in secondary region.
+name: Recovery steps in Secondary region.
 on: workflow_dispatch
 
 env:
