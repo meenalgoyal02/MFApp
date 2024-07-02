@@ -14,8 +14,8 @@ jobs:
             secure: true
             from:  meenalgoyal02@gmail.com
             to: meenalgoyal02@gmail.com
-            # username:  meenalgoyal02@gmail.com
-            # password: ${{ secrets.SMTP_PASSWORD }}
+            username:  meenalgoyal02@gmail.com
+            password: ${{ secrets.SMTP_PASSWORD }}
             subject: Test Email
             body: This is a test email sent from GitHub Actions.
             html_body: |
