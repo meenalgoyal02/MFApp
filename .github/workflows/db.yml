@@ -32,7 +32,7 @@ jobs:
         run: |
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'          
           query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d $RDS_DB -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)         
-          echo "::set-output name=migration_history_version::$query_output"       
+          echo "migration_history_version=$query_output" >> "$GITHUB_OUTPUT"      
           echo "MigrationHistoryVersion=$query_output">> "$GITHUB_OUTPUT" 
           
       - name: Get all the scripts from configured folder
@@ -61,7 +61,7 @@ jobs:
           
           if [ ${#scriptToExecute[@]} != 0 ]; then
             db_updateRequired=true
-            echo "There is atleast one script file with higher version number than Migration History version.Following files will be executed on Prod db."            
+            echo -e "033[0;32mThere is atleast one script file with higher version number than Migration History version.Following files will be executed on Prod db.\033[0m"            
             for scriptName in "${scriptToExecute[@]}"; do
               echo "${scriptName}"             
             done             
@@ -81,7 +81,9 @@ jobs:
           done
           hashmap_json+=$(printf '%s' '}')
           
+          echo "Debug:"
           echo "$hashmap_json"
+          echo "-----------------------------------"
 
           # Set the output
           echo "dbUpdateRequired=$db_updateRequired" >> "$GITHUB_OUTPUT"
@@ -133,7 +135,7 @@ jobs:
           export PGPASSWORD=postgres
           shadow_db_version_temp=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
           shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
-          echo "::set-output name=version::$shadow_db_version"
+          echo "version=$shadow_db_version" >> "$GITHUB_OUTPUT"
           echo "Shadow db version: $shadow_db_version"
 
       - name: Get Production db version
@@ -143,7 +145,7 @@ jobs:
           prod_db_version_temp=$(psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
           prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
           echo "Production db version-${prod_db_version}"
-          echo "::set-output name=version::$prod_db_version"
+          echo "version=$prod_db_version" >> "$GITHUB_OUTPUT"
 
       - name: Compare Shadow vs Prod db scripts
         run: |
