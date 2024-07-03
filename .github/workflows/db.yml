@@ -62,6 +62,7 @@ jobs:
           if [ ${#scriptToExecute[@]} != 0 ]; then
             db_updateRequired=true
             echo "There is a script file with higher version number than Migration History version." 
+            echo "Length- ${#scriptToExecute[@]}"
             echo "${scriptToExecute[@]}"                          
            fi
 
