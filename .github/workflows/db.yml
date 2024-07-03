@@ -54,7 +54,7 @@ jobs:
           # Get script file name with succeeding version number
           for key in "${!scriptFileHash[@]}"; do                    
               if [ "$key" -gt "$migrationHistoryVersion" ];then 
-                scriptToExecute[i]="${scriptFileHash[$key]}"
+                scriptToExecute[$i]="${scriptFileHash[$key]}"
                 i=$((i + 1))
               fi
            done          
