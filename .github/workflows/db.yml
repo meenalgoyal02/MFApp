@@ -221,7 +221,7 @@ jobs:
         id: notification-content
         run: |
             
-            subject=''
+            subject=""
             if [[ "${{ steps.scripts_required_to_run.outputs.can_run_on_prod }}" == "true" ]]; then
                 subject ="DB script updates completed on Production DB."
             else
