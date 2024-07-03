@@ -146,7 +146,7 @@ jobs:
       - name: Compare Shadow vs Prod db scripts
         run: |
            if [[ "${{ steps.shadow-db.outputs.version }}" != "${{ steps.prod-db.outputs.version }}" ]]; then 
-             echo "\033[0;33mWarning: Prod db version is not same as shadow db version. Please take corrective action.\033[0m"                                
+             echo -e "\033[0;33mWarning: Prod db version is not same as shadow db version. Please take corrective action.\033[0m"                                
            fi
      
       - name: Sort all the script filenames & execute them in order        
@@ -209,7 +209,7 @@ jobs:
                   psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
                 fi
               done
-              echo "033[0;32mExecution completed on Production db.\033[0m"
+              echo -e "033[0;32mExecution completed on Production db.\033[0m"
             fi
       # - name: Send notification email to the team about script status        
       #   uses: dawidd6/action-send-mail@v3
