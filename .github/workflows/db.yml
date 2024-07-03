@@ -215,20 +215,34 @@ jobs:
               done
               echo -e "\033[0;32mExecution completed on Production db.\033[0m"
             fi
-      # - name: Send notification email to the team about script status        
-      #   uses: dawidd6/action-send-mail@v3
-      #   with:
-      #       server_address: smtp.gmail.com
-      #       server_port: 465
-      #       secure: true
-      #       from:  ${{ env.SENDER_EMAIL_ID }}
-      #       to: ${{ env.RECEIVER_EMAIL_ID }}
-      #       username:  ${{env.SENDER_EMAIL_ID}}
-      #       password: ${{ secrets.SMTP_PASSWORD }}
-      #       subject: ${{ steps.verify-region-is-down.outputs.Email-subject }}                  
-      #       body:  |
-      #           Gameday Preparation completed with the run of GitHub workflow. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      #           Please check the application and take recovery steps, as required.
+            echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
+      
+      - name: Notification Content
+        id: notification-content
+        run: |
+            
+            subject=''
+            if[ "${{ steps.scripts_required_to_run.outputs.can_run_on_prod }}" == "true" ]; then
+                subject ="DB script updates completed on Production DB."
+            else
+                subject ="Error in script execution on Shadow DB."
+            fi
+            echo "email-subject=$subject" >> "$GITHUB_OUTPUT"
+
+      - name: Send notification email to the team about script status        
+        uses: dawidd6/action-send-mail@v3
+        with:
+            server_address: smtp.gmail.com
+            server_port: 465
+            secure: true
+            from:  ${{ env.SENDER_EMAIL_ID }}
+            to: ${{ env.RECEIVER_EMAIL_ID }}
+            username:  ${{env.SENDER_EMAIL_ID}}
+            password: ${{ secrets.SMTP_PASSWORD }}
+            subject: ${{ steps.notification-content.outputs.email-subject }}                  
+            body:  |
+                DB migration script automation run completed. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                Please check the logs and take corrective action, if required.
         
       
 
