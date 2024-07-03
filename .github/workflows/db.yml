@@ -40,6 +40,8 @@ jobs:
         run: |
           migrationHistoryVersion="${{ steps.get_migration_history.outputs.migration_history_version }}"
           echo "migrationHistoryVersion: $migrationHistoryVersion"
+          declare -A scriptToExecute
+          i=0
           shopt -s dotglob
 
           for file in $(ls "$MIGRATION_FOLDER"); do
@@ -52,11 +54,18 @@ jobs:
           # Get script file name with succeeding version number
           for key in "${!scriptFileHash[@]}"; do                    
               if [ "$key" -gt "$migrationHistoryVersion" ];then 
-                db_updateRequired=true
-                echo "There is a script file with higher version number than Migration History version."                
-                break;
+                scriptToExecute[i]="${scriptFileHash[$key]}"
+               
               fi
            done
+            
+           echo "${scriptToExecute[@]}"
+          
+          if [ ${#scriptToExecute[@]} !=0]
+            db_updateRequired=true
+            echo "There is a script file with higher version number than Migration History version." 
+            echo "${scriptToExecute[@]}"                          
+           fi
 
           # echo "Can run further: ${db_updateRequired}"
           # Convert scriptFileHash to JSON string         
@@ -180,6 +189,7 @@ jobs:
                 # Convert output to lowercase
                 converted_output="${query_output,,}"
                 echo "Query output: ${converted_output}"
+                echo "-----------------------------------------------------------------------"
 
                 if echo "$converted_output" | grep -q "error"; then
                   can_run_on_prod=false
