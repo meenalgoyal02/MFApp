@@ -61,9 +61,10 @@ jobs:
           
           if [ ${#scriptToExecute[@]} != 0 ]; then
             db_updateRequired=true
-            echo "There is a script file with higher version number than Migration History version." 
-            echo "Length- ${#scriptToExecute[@]}"
-            echo "${scriptToExecute[@]}"                          
+            echo "There is atleast one script file with higher version number than Migration History version.Following files will be executed on Prod db."            
+            for scriptName in "${scriptToExecute[@]}"; do
+              echo "${scriptName}"             
+            done             
            fi
 
           # echo "Can run further: ${db_updateRequired}"
