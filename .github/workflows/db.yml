@@ -55,12 +55,9 @@ jobs:
           for key in "${!scriptFileHash[@]}"; do                    
               if [ "$key" -gt "$migrationHistoryVersion" ];then 
                 scriptToExecute[i]="${scriptFileHash[$key]}"
-               
+                i=$((i + 1))
               fi
-           done
-          
-           echo "Debug:"
-           echo "${scriptToExecute[@]}"
+           done          
           
           if [ ${#scriptToExecute[@]} != 0 ]; then
             db_updateRequired=true
@@ -149,7 +146,7 @@ jobs:
       - name: Compare Shadow vs Prod db scripts
         run: |
            if [[ "${{ steps.shadow-db.outputs.version }}" != "${{ steps.prod-db.outputs.version }}" ]]; then 
-             echo "Warning: Prod db version is not same as shadow db version. Please take corrective action."                                
+             echo "\033[0;33mWarning: Prod db version is not same as shadow db version. Please take corrective action.\033[0m"                                
            fi
      
       - name: Sort all the script filenames & execute them in order        
@@ -194,7 +191,7 @@ jobs:
 
                 if echo "$converted_output" | grep -q "error"; then
                   can_run_on_prod=false
-                  echo "Error in script execution. Can not run on Prod."
+                  echo -e "\033[0;31mError in script execution. Can not run on Prod.\033[0m"
                   break;
                 fi
             done
@@ -212,9 +209,23 @@ jobs:
                   psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
                 fi
               done
-              echo "Execution completed on Production db."
+              echo "033[0;32mExecution completed on Production db.\033[0m"
             fi
-                
+      # - name: Send notification email to the team about script status        
+      #   uses: dawidd6/action-send-mail@v3
+      #   with:
+      #       server_address: smtp.gmail.com
+      #       server_port: 465
+      #       secure: true
+      #       from:  ${{ env.SENDER_EMAIL_ID }}
+      #       to: ${{ env.RECEIVER_EMAIL_ID }}
+      #       username:  ${{env.SENDER_EMAIL_ID}}
+      #       password: ${{ secrets.SMTP_PASSWORD }}
+      #       subject: ${{ steps.verify-region-is-down.outputs.Email-subject }}                  
+      #       body:  |
+      #           Gameday Preparation completed with the run of GitHub workflow. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      #           Please check the application and take recovery steps, as required.
+        
       
 
        
