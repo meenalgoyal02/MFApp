@@ -51,10 +51,20 @@ jobs:
           include:
             - folder: 'src/migrations/ddl'
               db_version: ${{ needs.migration-required-or-not.outputs.ddl }} 
+              migration_column: 'ddl' 
             - folder: 'src/migrations/triggers'
               db_version: ${{ needs.migration-required-or-not.outputs.triggers }}
+              migration_column: 'triggers' 
             - folder: 'src/migrations/stored_procedures'
-              db_version: ${{ needs.migration-required-or-not.outputs.stored_procedure }}          
+              db_version: ${{ needs.migration-required-or-not.outputs.stored_procedure }} 
+              migration_column: 'stored_procedure'    
+    outputs:
+        ddl_dbUpdateRequired: ${{steps.filename_read.outputs.ddl_dbUpdateRequired}}
+        ddl_scriptFileHash: ${{steps.filename_read.outputs.ddl_scriptFileHash}}
+        triggers_dbUpdateRequired: ${{steps.filename_read.outputs.triggers_dbUpdateRequired}}
+        triggers_scriptFileHash: ${{steps.filename_read.outputs.triggers_scriptFileHash}}
+        stored_procedure_dbUpdateRequired: ${{steps.filename_read.outputs.stored_procedure_dbUpdateRequired}}
+        stored_procedure_scriptFileHash: ${{steps.filename_read.outputs.stored_procedure_scriptFileHash}}     
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -66,4 +76,49 @@ jobs:
         run: |
          echo 'Result of version- ${{ matrix.db_version }}'
          
+      - name: Get all the scripts from configured folder
+        id: filename_read
+        run: |
+           migrationHistoryVersion="${{  matrix.db_version }}"
+           MIGRATION_FOLDER=${{ matrix.folder }}
+           echo "migrationHistoryVersion: $migrationHistoryVersion"
+           shopt -s dotglob
+ 
+           declare -A scriptFileHash
+           db_updateRequired=false
+ 
+           for file in $(ls "$MIGRATION_FOLDER"); do
+             echo "File name:$file"
+             scriptFiles=(${scriptFiles[@]} "$file")
+             IFS='_' read -ra splitName <<< "$file"
+             scriptFileHash["${splitName[0]}"]="${file}"
+           done
+ 
+           # Get script file name with succeeding version number
+           for key in "${!scriptFileHash[@]}"; do
+             if [ "$key" -gt "$migrationHistoryVersion" ];then 
+               db_updateRequired=true
+               echo "There is a script file with higher version number than Migration History version."
+               break
+             fi
+           done
+ 
+           # echo "Can run further: ${db_updateRequired}"
+           # Convert scriptFileHash to JSON string
+           hashmap_json="{"
+           first=true
+           for key in "${!scriptFileHash[@]}"; do
+             if [ "$first" = true ]; then
+               first=false
+             else
+               hashmap_json+=","
+             fi
+             hashmap_json+="\"$key\":\"${scriptFileHash[$key]}\""
+           done
+           hashmap_json+=$(printf '%s' '}')
+           echo "$hashmap_json"
+ 
+           # Set the output
+           echo "::set-output name=${{ matrix.migration_column }}_dbUpdateRequired::$db_updateRequired"
+           echo "::set-output name=${{ matrix.migration_column }}_scriptFileHash::$hashmap_json"
       
