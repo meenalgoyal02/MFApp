@@ -45,7 +45,16 @@ jobs:
             stored_procedure: ${{ steps.get_migration_history.outputs.stored_procedure }}
   get-files-from-folder:
     runs-on: ubuntu-latest
-    needs: migration-required-or-not          
+    needs: migration-required-or-not 
+    strategy:
+        matrix:
+          include:
+            - folder: 'src/migrations/ddl'
+              db_version: ${{ needs.migration-required-or-not.outputs.ddl }} 
+            - folder: 'src/migrations/triggers'
+              db_version: ${{ needs.migration-required-or-not.outputs.triggers }}
+            - folder: 'src/migrations/stored_procedures'
+              db_version: ${{ needs.migration-required-or-not.outputs.stored_procedure }}          
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -55,7 +64,6 @@ jobs:
 
       - name: Print results of above step
         run: |
-         echo 'Result of ddl- ${{ needs.migration-required-or-not.outputs.ddl }}'
-         echo 'Result of ddl- ${{ needs.migration-required-or-not.outputs.triggers }}'
-         echo 'Result of ddl- ${{ needs.migration-required-or-not.outputs.stored_procedure }}'
-
+         echo 'Result of version- ${{ matrix.db_version }}'
+         
+      
