@@ -34,6 +34,28 @@ jobs:
         id: get_migration_history
         run: |          
           query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d poc -t -c "select ${{ matrix.migration_column }} from \"_MigrationsHistory\" order by migration_id desc limit 1" 2>&1)
-          echo "::set-output name=migration_history_version::$query_output"
-          echo "MigrationHistoryVersion=$query_output" >> "$GITHUB_OUTPUT"
+          echo "Output- $query_output"
+
+          echo "${{ matrix.migration_column }}=$query_output" >> $GITHUB_OUTPUT
+        #   echo "::set-output name=migration_history_version::$query_output"
+        #   echo "MigrationHistoryVersion=$query_output" >> "$GITHUB_OUTPUT"
+    outputs:
+            ddl: ${{ steps.get_migration_history.outputs.ddl }}
+            triggers: ${{ steps.get_migration_history.outputs.triggers }}
+            stored_procedure: ${{ steps.get_migration_history.outputs.stored_procedure }}
+  get-files-from-folder:
+    runs-on: ubuntu-latest
+    needs: migration-required-or-not          
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Print results of above step
+        run: |
+         echo 'Result of ddl- ${{ needs.migration-required-or-not.outputs.ddl }}'
+         echo 'Result of ddl- ${{ needs.migration-required-or-not.outputs.triggers }}'
+         echo 'Result of ddl- ${{ needs.migration-required-or-not.outputs.stored_procedure }}'
 
