@@ -1,13 +1,13 @@
-name: DB script execution automation
+name: DB script using matrix 
 
-on: workflow_dispatch
+on: push
 
 env:
   AWS_REGION: 'us-east-1'
   RDS_HOST: 'pocdb1.ciwtq0frolty.us-east-1.rds.amazonaws.com'
   RDS_PORT: '5432'
   RDS_USERNAME: 'postgres'
-  PGPASSWORD: ${{ secrets.RDS_PASSWORD }}
+  PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -16,8 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        folder: ['src/migrations/ddl', 'src/migrations/triggers', 'src/migrations/stored_procedures' ]
-        migration_column: ['ddl','triggers','stored_procedure']    
+        include:
+          - folder: 'src/migrations/ddl'
+            migration_column: 'ddl' 
+          - folder: 'src/migrations/triggers'
+            migration_column: 'triggers' 
+          - folder: 'src/migrations/stored_procedures'
+            migration_column: 'stored_procedure'             
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
