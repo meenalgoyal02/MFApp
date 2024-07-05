@@ -145,7 +145,7 @@ jobs:
     # Service containers to run with `container-job`
     services:
         # Label used to access the service container
-       postgres:
+       abc:
         # Docker Hub image
         image: postgres:latest
         # Provide the password for postgres
@@ -208,10 +208,10 @@ jobs:
             folder-name: ${{ env.MIGRATION_FOLDER }}   
             db-current-version: ${{ needs.migration-required-or-not.outputs.ddl }}
             scripts-file-hash: ${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}
-            pg_host: 'postgres'
+            pg_host: 'abc'
             pg_user: 'postgres'
             pg_password: 'postgres'
-            pg_db: 'shadowdb'
+            pg_db: 'shadowDb'
             pg_port: '5432'
                       
     #    - name: Sort all the script filenames & execute them in order        
