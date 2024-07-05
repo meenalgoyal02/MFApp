@@ -214,7 +214,7 @@ jobs:
            script_folders="${{ steps.split_inputs.outputs.script_folders}}"
            for script_folder in ${{ steps.split_inputs.outputs.script_folders}}; do
              echo "Running for folder:$script_folder"
-             outputs=(gh workflow run /.github/actions/sort_and_run_scripts_on_shadow_db --with folder-name="$script_folder" --with db-current-version="${{ needs.migration-required-or-not.outputs.ddl }}" --with scripts-file-hash="${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}" --with pg_host="abc" --with pg_user="postgres" --with 
+             outputs=$(gh workflow run /.github/actions/sort_and_run_scripts_on_shadow_db --with folder-name="$script_folder" --with db-current-version="${{ needs.migration-required-or-not.outputs.ddl }}" --with scripts-file-hash="${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}" --with pg_host="abc" --with pg_user="postgres" --with 
              pg_password="postgres" --with pg_db="shadowDb" --with pg_port="5432")
 
              echo "Outputs: $outputs"
