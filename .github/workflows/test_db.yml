@@ -82,42 +82,56 @@ jobs:
         run: |
            migrationHistoryVersion="${{  matrix.db_version }}"
            MIGRATION_FOLDER=${{ matrix.folder }}
+
            echo "migrationHistoryVersion: $migrationHistoryVersion"
-           shopt -s dotglob
- 
+
+           declare -A scriptToExecute
            declare -A scriptFileHash
            db_updateRequired=false
- 
-           for file in $(ls "$MIGRATION_FOLDER"); do
-             echo "File name:$file"
-             scriptFiles=(${scriptFiles[@]} "$file")
-             IFS='_' read -ra splitName <<< "$file"
-             scriptFileHash["${splitName[0]}"]="${file}"
-           done
- 
-           # Get script file name with succeeding version number
-           for key in "${!scriptFileHash[@]}"; do
-             if [ "$key" -gt "$migrationHistoryVersion" ];then 
-               db_updateRequired=true
-               echo "There is a script file with higher version number than Migration History version."
-               break
-             fi
-           done
- 
-           # echo "Can run further: ${db_updateRequired}"
-           # Convert scriptFileHash to JSON string
-           hashmap_json="{"
-           first=true
-           for key in "${!scriptFileHash[@]}"; do
-             if [ "$first" = true ]; then
-               first=false
-             else
-               hashmap_json+=","
-             fi
-             hashmap_json+="\"$key\":\"${scriptFileHash[$key]}\""
-           done
-           hashmap_json+=$(printf '%s' '}')
-           echo "$hashmap_json"
+           
+            i=0
+            shopt -s dotglob
+
+            for file in $(ls "$MIGRATION_FOLDER"); do
+                echo "File name:$file"
+                scriptFiles=(${scriptFiles[@]} "$file")
+                IFS='_' read -ra splitName <<< "$file"
+                scriptFileHash["${splitName[0]}"]="${file}"          
+            done
+
+            # Get script file name with succeeding version number
+            for key in "${!scriptFileHash[@]}"; do                    
+                if [ "$key" -gt "$migrationHistoryVersion" ];then 
+                    scriptToExecute[$i]="${scriptFileHash[$key]}"
+                    i=$((i + 1))
+                fi
+            done          
+            
+            if [ ${#scriptToExecute[@]} != 0 ]; then
+                db_updateRequired=true
+                echo -e "\033[0;32mThere is atleast one script file with higher version number than Migration History version.Following files will be executed on Prod db.\033[0m"            
+                for scriptName in "${scriptToExecute[@]}"; do
+                echo "${scriptName}"             
+                done             
+            fi
+
+            # echo "Can run further: ${db_updateRequired}"
+            # Convert scriptFileHash to JSON string         
+            hashmap_json="{"
+            first=true
+            for key in "${!scriptFileHash[@]}"; do
+                if [ "$first" = true ]; then
+                first=false
+                else
+                hashmap_json+=","
+                fi
+                hashmap_json+="\"$key\":\"${scriptFileHash[$key]}\""
+            done
+            hashmap_json+=$(printf '%s' '}')
+            
+            echo "Debug:"
+            echo "$hashmap_json"
+            echo "-----------------------------------"
  
            # Set the output
            echo "::set-output name=${{ matrix.migration_column }}_dbUpdateRequired::$db_updateRequired"
@@ -195,7 +209,9 @@ jobs:
             migrationHistoryVersion="${{ needs.migration-required-or-not.outputs.ddl }}"
             echo "migrationHistoryVersion: $migrationHistoryVersion"
             declare -A hashmap
+            declare -A scriptToExecute
             i=0
+            j=0
             echo "${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}"
             # Access the hashmap JSON string
             hashmap_json=${{ needs.get-files-from-folder.outputs.ddl_scriptFileHash }}
@@ -235,7 +251,24 @@ jobs:
                     break;
                 fi
             done
+            
             echo "Execution completed on Shadow db."
+            echo "can_run_on_prod=$can_run_on_prod" >>"$GITHUB_OUTPUT"
+
+            # Create the array of filenames to execute on Prod
+            if [ "$can_run_on_prod" = true ]; then
+                 for key in "${!hashmap[@]}"; do             
+                    if(($key>$migrationHistoryVersion)); then 
+                        scriptToExecute[$j]="${hashmap[$key]}"
+                        j=$((j + 1))
+                    fi
+                 done
+            fi
+
+            #convert into a json to output the same.
+            scripts_for_prod=$(IFS=,; echo "${scriptToExecute[*]}")
+            echo "scripts_for_prod_json=$scripts_for_prod" >> $GITHUB_OUTPUT
+
 
             # if [ "$can_run_on_prod" = true ]; then
             #     echo "Running scripts on Prod db..."
@@ -252,3 +285,11 @@ jobs:
             #     echo -e "\033[0;32mExecution completed on Production db.\033[0m"
             # fi
             # echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
+       - name: Run the scripts on Production
+         run: |
+            prod_scripts_to_run= ${{ steps.scripts_required_to_run.outputs.scripts_for_prod_json }}
+            echo "Production script names is - ${prod_scripts_to_run}"
+            IFS=',' read -ra ADDR <<< "${prod_scripts_to_run}"
+            for i in "${ADDR[@]}"; do
+                echo "String: $i"
+            done
