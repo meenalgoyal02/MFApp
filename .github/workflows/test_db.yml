@@ -208,7 +208,7 @@ jobs:
             folder-name: ${{ env.MIGRATION_FOLDER }}   
             db-current-version: ${{ needs.migration-required-or-not.outputs.ddl }}
             scripts-file-hash: ${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}
-            pg_host: 'localhost'
+            pg_host: 'postgres'
             pg_user: 'postgres'
             pg_password: 'postgres'
             pg_db: 'shadowdb'
