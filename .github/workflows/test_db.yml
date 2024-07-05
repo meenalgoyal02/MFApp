@@ -193,7 +193,7 @@ jobs:
          run: |
             # migrationFolder="${{ needs.get-files-from-folder.outputs}}"
             migrationHistoryVersion="${{ needs.migration-required-or-not.outputs.ddl }}"
-            #echo "migrationHistoryVersion: $migrationHistoryVersion"
+            echo "migrationHistoryVersion: $migrationHistoryVersion"
             declare -A hashmap
             i=0
             echo "${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}"
