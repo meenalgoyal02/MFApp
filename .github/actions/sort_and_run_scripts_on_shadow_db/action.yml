@@ -34,17 +34,15 @@ outputs:
     description: 'Can run on Production, as per execution on Shadow DB.'
     value: ${{ steps.scripts_required_to_run.outputs.can_run_on_prod }}  
 runs:
-  using: 'composite'
+  using: 'docker'
+  image: 'docker://postgres:latest'
+  args:
+     - sh
+     - -c
   steps:
      - name: Sort all the script filenames & execute them in order        
        id: scripts_required_to_run
-       run:
-         using: 'docker'
-         image: 'docker://postgres:latest'
-         args:
-          - sh
-          - -c
-          - | 
+       run: |
             migrationFolder="${{ inputs.folder-name }}"
             migrationHistoryVersion="${{ inputs.db-current-version }}"
             # Access the hashmap JSON string           
