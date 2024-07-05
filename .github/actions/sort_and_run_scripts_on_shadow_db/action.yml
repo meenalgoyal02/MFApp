@@ -37,8 +37,8 @@ runs:
   using: 'composite'
   steps:
      - name: Sort all the script filenames & execute them in order        
-         id: scripts_required_to_run
-         run: |
+       id: scripts_required_to_run
+       run: |
             migrationFolder="${{ inputs.folder-name }}"
             migrationHistoryVersion="${{ inputs.db-current-version }}"
             # Access the hashmap JSON string           
