@@ -11,7 +11,8 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   MIGRATION_FOLDER: 'src/migrations/ddl'
-
+  SCRIPT_FOLDERS: src/migrations/ddl
+#,src/migrations/triggers,src/migrations/stored_procedures
 jobs:
   migration-required-or-not:
     runs-on: ubuntu-latest
@@ -177,7 +178,6 @@ jobs:
          with:
             var_file_path: ./.github/variables/db_automation.env
 
-
     #    - name: Get Shadow db version
     #      id: shadow-db
     #      run: |
@@ -201,31 +201,50 @@ jobs:
     #         if [[ "${{ steps.shadow-db.outputs.version }}" != "${{ steps.prod-db.outputs.version }}" ]]; then 
     #             echo -e "\033[0;33mWarning: Prod db version is not same as shadow db version. Please take corrective action.\033[0m"                                
     #         fi
-       - name: Sort scripts using action
-         id: scripts_required_to_run
-         uses: ./.github/actions/sort_and_run_scripts_on_shadow_db
-         with:
-            folder-name: ${{ env.MIGRATION_FOLDER }}   
-            db-current-version: ${{ needs.migration-required-or-not.outputs.ddl }}
-            scripts-file-hash: ${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}
-            pg_host: 'abc'
-            pg_user: 'postgres'
-            pg_password: 'postgres'
-            pg_db: 'shadowDb'
-            pg_port: '5432'
-                           
-       - name: Run the scripts on Production
-         if: ${{steps.scripts_required_to_run.outputs.can_run_on_prod=='true'}}
+       
+       - name: Split input folder names
+         id: split_inputs
          run: |
-            prod_scripts_to_run="${{ steps.scripts_required_to_run.outputs.scripts_for_prod_json }}"
-            echo "Production script names is - $prod_scripts_to_run"
-            echo "Running scripts on Prod db..."
-            IFS=',' read -ra scripts <<< "${prod_scripts_to_run}"
-            for script_name in "${scripts[@]}"; do
-                echo "String: $script_name"
-                file="${MIGRATION_FOLDER}/${script_name}"
-                export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-                echo "Executing file- ${file}"
-                psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"                                           
-            done
-            echo -e "\033[0;32mExecution completed on Production db.\033[0m"
+            folder_list=(${{ env.SCRIPT_FOLDERS }})
+            echo "script_folders=${folder_list[@]}" >> $GITHUB_OUTPUT
+
+       - name: Run scripts over Shadow DB   
+         id: test-shadow-db
+         run: |
+           script_folders="${{ steps.split_inputs.outputs.script_folders}}"
+           for script_folder in ${{ steps.split_inputs.outputs.script_folders}}; do
+             echo "Running for folder:$script_folder"
+             outputs=(gh workflow run /.github/actions/sort_and_run_scripts_on_shadow_db --with folder-name="$script_folder" --with db-current-version="${{ needs.migration-required-or-not.outputs.ddl }}" --with scripts-file-hash="${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}" --with pg_host="abc" --with pg_user="postgres" --with 
+             pg_password="postgres" --with pg_db="shadowDb" --with pg_port="5432")
+
+             echo "Outputs: $outputs"
+           done
+      
+    #    - name: Sort scripts using action
+    #      id: scripts_required_to_run
+    #      uses: ./.github/actions/sort_and_run_scripts_on_shadow_db
+    #      with:
+    #         folder-name: ${{ env.MIGRATION_FOLDER }}   
+    #         db-current-version: ${{ needs.migration-required-or-not.outputs.ddl }}
+    #         scripts-file-hash: ${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}
+    #         pg_host: 'abc'
+    #         pg_user: 'postgres'
+    #         pg_password: 'postgres'
+    #         pg_db: 'shadowDb'
+    #         pg_port: '5432'
+                           
+    #    - name: Run the scripts on Production
+    #      if: ${{steps.scripts_required_to_run.outputs.can_run_on_prod=='true'}}
+    #      run: |
+    #         prod_scripts_to_run="${{ steps.scripts_required_to_run.outputs.scripts_for_prod_json }}"
+    #         echo "Production script names is - $prod_scripts_to_run"
+    #         echo "Running scripts on Prod db..."
+    #         IFS=',' read -ra scripts <<< "${prod_scripts_to_run}"
+    #         for script_name in "${scripts[@]}"; do
+    #             echo "String: $script_name"
+    #             file="${MIGRATION_FOLDER}/${script_name}"
+    #             export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+    #             echo "Executing file- ${file}"
+    #             psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"                                           
+    #         done
+    #         echo -e "\033[0;32mExecution completed on Production db.\033[0m"
