@@ -10,6 +10,7 @@ env:
   PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  MIGRATION_FOLDER: 'src/migrations/ddl'
 
 jobs:
   migration-required-or-not:
@@ -121,4 +122,133 @@ jobs:
            # Set the output
            echo "::set-output name=${{ matrix.migration_column }}_dbUpdateRequired::$db_updateRequired"
            echo "::set-output name=${{ matrix.migration_column }}_scriptFileHash::$hashmap_json"
-      
+
+  script-validation-on-shadow-db:
+    needs: 
+        - get-files-from-folder
+        - migration-required-or-not
+    runs-on: ubuntu-latest    
+    # Service containers to run with `container-job`
+    services:
+        # Label used to access the service container
+       postgres:
+        # Docker Hub image
+        image: postgres:latest
+        # Provide the password for postgres
+        env:
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_DB: shadowDb
+        # Set health checks to wait until postgres has started
+        options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
+        ports:
+            # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+        
+    if: ${{needs.get-files-from-folder.outputs.ddl_dbUpdateRequired=='true'}}
+    steps: 
+       - name: Check out repository code
+         uses: actions/checkout@v2
+
+        # Performs a clean installation of all dependencies in the `package.json` file      
+       - name: Install dependencies
+         run: npm ci
+
+       - name: Set Environment Variables from File
+         uses: ./.github/actions/setup-environment
+         with:
+            var_file_path: ./.github/variables/db_automation.env
+
+
+       - name: Get Shadow db version
+         id: shadow-db
+         run: |
+            export PGPASSWORD=postgres
+            shadow_db_version_temp=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
+            shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+            echo "version=$shadow_db_version" >> "$GITHUB_OUTPUT"
+            echo "Shadow db version: $shadow_db_version"
+
+       - name: Get Production db version
+         id: prod-db
+         run: |
+            export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+            prod_db_version_temp=$(psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+            prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+            echo "Production db version-${prod_db_version}"
+            echo "version=$prod_db_version" >> "$GITHUB_OUTPUT"
+
+       - name: Compare Shadow vs Prod db scripts
+         run: |
+            if [[ "${{ steps.shadow-db.outputs.version }}" != "${{ steps.prod-db.outputs.version }}" ]]; then 
+                echo -e "\033[0;33mWarning: Prod db version is not same as shadow db version. Please take corrective action.\033[0m"                                
+            fi
+        
+       - name: Sort all the script filenames & execute them in order        
+         id: scripts_required_to_run
+         run: |
+            # migrationFolder="${{ needs.get-files-from-folder.outputs}}"
+            migrationHistoryVersion="${{ needs.migration-required-or-not.outputs.ddl }}"
+            #echo "migrationHistoryVersion: $migrationHistoryVersion"
+            declare -A hashmap
+            i=0
+            echo "${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}"
+            # Access the hashmap JSON string
+            hashmap_json=${{ needs.get-files-from-folder.outputs.ddl_scriptFileHash }}
+            
+            # Deserialize JSON to an associative array
+            IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
+            
+            for key in ${tempArray[@]}; do
+                i=$((i + 1))      
+                if [ $(($i%2)) == 0 ]; then                                         
+                    hashmap["${tempArray[$((i-1))]}"]="${key}"                       
+                else                 
+                    tempkey="${key}"                 
+                fi
+            done
+
+            #output the hashed set from the step.
+            sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
+
+            can_run_on_prod=true
+            echo "Running scripts over Shadow db...."
+            for key in "${sorted_keys[@]}"; do              
+                value=${hashmap[$key]}
+                file="${MIGRATION_FOLDER}/${value}"
+                
+                echo "Executing script file: ${file}"
+                export PGPASSWORD=postgres
+                query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
+                # Convert output to lowercase
+                converted_output="${query_output,,}"
+                echo "Query output: ${converted_output}"
+                echo "-----------------------------------------------------------------------"
+
+                if echo "$converted_output" | grep -q "error"; then
+                    can_run_on_prod=false
+                    echo -e "\033[0;31mError in script execution. Can not run on Prod.\033[0m"
+                    break;
+                fi
+            done
+            echo "Execution completed on Shadow db."
+
+            # if [ "$can_run_on_prod" = true ]; then
+            #     echo "Running scripts on Prod db..."
+            #     # run incremental scripts on Prod db.
+            #     for key in "${!hashmap[@]}"; do             
+            #     if(($key>$migrationHistoryVersion)); then 
+                    
+            #         file="${MIGRATION_FOLDER}/${hashmap[$key]}"
+            #         export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+            #         echo "Executing file- ${file}"
+            #         psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
+            #     fi
+            #     done
+            #     echo -e "\033[0;32mExecution completed on Production db.\033[0m"
+            # fi
+            # echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
