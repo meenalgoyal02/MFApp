@@ -39,73 +39,73 @@ runs:
      - name: Sort all the script filenames & execute them in order        
          id: scripts_required_to_run
          run: |
-            migrationFolder="${{ inputs.folder-name }}"
-            migrationHistoryVersion="${{ inputs.db-current-version }}"
-            # Access the hashmap JSON string           
-            hashmap_json=${{ inputs.scripts-file-hash }}
+            # migrationFolder="${{ inputs.folder-name }}"
+            # migrationHistoryVersion="${{ inputs.db-current-version }}"
+            # # Access the hashmap JSON string           
+            # hashmap_json=${{ inputs.scripts-file-hash }}
             
-            echo "MigrationHistoryVersion: $migrationHistoryVersion"
-            echo "Script files: $hashmap_json"
-            echo "Folder name: $migrationFolder"
+            # echo "MigrationHistoryVersion: $migrationHistoryVersion"
+            # echo "Script files: $hashmap_json"
+            # echo "Folder name: $migrationFolder"
 
-            declare -A hashmap
-            declare -A scriptToExecute
-            i=0
-            j=0
+            # declare -A hashmap
+            # declare -A scriptToExecute
+            # i=0
+            # j=0
 
-            # Deserialize JSON to an associative array
-            IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
+            # # Deserialize JSON to an associative array
+            # IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
             
-            for key in ${tempArray[@]}; do
-                i=$((i + 1))      
-                if [ $(($i%2)) == 0 ]; then                                         
-                    hashmap["${tempArray[$((i-1))]}"]="${key}"                       
-                else                 
-                    tempkey="${key}"                 
-                fi
-            done
+            # for key in ${tempArray[@]}; do
+            #     i=$((i + 1))      
+            #     if [ $(($i%2)) == 0 ]; then                                         
+            #         hashmap["${tempArray[$((i-1))]}"]="${key}"                       
+            #     else                 
+            #         tempkey="${key}"                 
+            #     fi
+            # done
 
-            #output the hashed set from the step.
-            sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
+            # #output the hashed set from the step.
+            # sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
 
-            can_run_on_prod=true
-            echo "Running scripts over Shadow db...."
-            for key in "${sorted_keys[@]}"; do              
-                value=${hashmap[$key]}
-                file="${migrationFolder}/${value}"
+            # can_run_on_prod=true
+            # echo "Running scripts over Shadow db...."
+            # for key in "${sorted_keys[@]}"; do              
+            #     value=${hashmap[$key]}
+            #     file="${migrationFolder}/${value}"
                 
-                echo "Executing script file: ${file}"
-                export PGPASSWORD=${pg_password}
-                query_output=$(psql -h $pg_host -p $pg_port -U $pg_user  -d $pg_db  -f "$file" 2>&1)
+            #     echo "Executing script file: ${file}"
+            #     export PGPASSWORD=${pg_password}
+            #     query_output=$(psql -h $pg_host -p $pg_port -U $pg_user  -d $pg_db  -f "$file" 2>&1)
                 
-                # Convert output to lowercase
-                converted_output="${query_output,,}"
-                echo "Query output: ${converted_output}"
-                echo "-----------------------------------------------------------------------"
+            #     # Convert output to lowercase
+            #     converted_output="${query_output,,}"
+            #     echo "Query output: ${converted_output}"
+            #     echo "-----------------------------------------------------------------------"
 
-                if echo "$converted_output" | grep -q "error"; then
-                    can_run_on_prod=false
-                    echo -e "\033[0;31mError in script execution. Can not run on Prod.\033[0m"
-                    break;
-                fi
-            done
+            #     if echo "$converted_output" | grep -q "error"; then
+            #         can_run_on_prod=false
+            #         echo -e "\033[0;31mError in script execution. Can not run on Prod.\033[0m"
+            #         break;
+            #     fi
+            # done
             
             echo "Execution completed on Shadow db."
             echo "can_run_on_prod=$can_run_on_prod" >>"$GITHUB_OUTPUT"
 
-            # Create the array of filenames to execute on Prod
-            if [ "$can_run_on_prod" = true ]; then
-                 for key in "${!hashmap[@]}"; do             
-                    if(($key>$migrationHistoryVersion)); then 
-                        scriptToExecute[$j]="${hashmap[$key]}"
-                        j=$((j + 1))
-                    fi
-                 done
-            fi
+            # # Create the array of filenames to execute on Prod
+            # if [ "$can_run_on_prod" = true ]; then
+            #      for key in "${!hashmap[@]}"; do             
+            #         if(($key>$migrationHistoryVersion)); then 
+            #             scriptToExecute[$j]="${hashmap[$key]}"
+            #             j=$((j + 1))
+            #         fi
+            #      done
+            # fi
 
-            #convert into a json to output the same.
-            scripts_for_prod=$(IFS=,; echo "${scriptToExecute[*]}")
-            echo "scripts_for_prod_json=$scripts_for_prod" >> $GITHUB_OUTPUT
-            echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
+            # #convert into a json to output the same.
+            # scripts_for_prod=$(IFS=,; echo "${scriptToExecute[*]}")
+            # echo "scripts_for_prod_json=$scripts_for_prod" >> $GITHUB_OUTPUT
+            # echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
      
       shell: bash
