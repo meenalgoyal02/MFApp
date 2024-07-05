@@ -88,7 +88,7 @@ jobs:
            declare -A scriptToExecute
            declare -A scriptFileHash
            db_updateRequired=false
-           
+
             i=0
             shopt -s dotglob
 
@@ -178,29 +178,29 @@ jobs:
             var_file_path: ./.github/variables/db_automation.env
 
 
-       - name: Get Shadow db version
-         id: shadow-db
-         run: |
-            export PGPASSWORD=postgres
-            shadow_db_version_temp=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
-            shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
-            echo "version=$shadow_db_version" >> "$GITHUB_OUTPUT"
-            echo "Shadow db version: $shadow_db_version"
+    #    - name: Get Shadow db version
+    #      id: shadow-db
+    #      run: |
+    #         export PGPASSWORD=postgres
+    #         shadow_db_version_temp=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -t -c "show server_version;" 2>&1)            
+    #         shadow_db_version=$(echo $shadow_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+    #         echo "version=$shadow_db_version" >> "$GITHUB_OUTPUT"
+    #         echo "Shadow db version: $shadow_db_version"
 
-       - name: Get Production db version
-         id: prod-db
-         run: |
-            export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-            prod_db_version_temp=$(psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
-            prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
-            echo "Production db version-${prod_db_version}"
-            echo "version=$prod_db_version" >> "$GITHUB_OUTPUT"
+    #    - name: Get Production db version
+    #      id: prod-db
+    #      run: |
+    #         export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+    #         prod_db_version_temp=$(psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME  -t -c "show server_version;" 2>&1)
+    #         prod_db_version=$(echo $prod_db_version_temp | awk '{print $1}' | cut -d '.' -f1,2)
+    #         echo "Production db version-${prod_db_version}"
+    #         echo "version=$prod_db_version" >> "$GITHUB_OUTPUT"
 
-       - name: Compare Shadow vs Prod db scripts
-         run: |
-            if [[ "${{ steps.shadow-db.outputs.version }}" != "${{ steps.prod-db.outputs.version }}" ]]; then 
-                echo -e "\033[0;33mWarning: Prod db version is not same as shadow db version. Please take corrective action.\033[0m"                                
-            fi
+    #    - name: Compare Shadow vs Prod db scripts
+    #      run: |
+    #         if [[ "${{ steps.shadow-db.outputs.version }}" != "${{ steps.prod-db.outputs.version }}" ]]; then 
+    #             echo -e "\033[0;33mWarning: Prod db version is not same as shadow db version. Please take corrective action.\033[0m"                                
+    #         fi
         
        - name: Sort all the script filenames & execute them in order        
          id: scripts_required_to_run
@@ -287,7 +287,7 @@ jobs:
             # echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
        - name: Run the scripts on Production
          run: |
-            prod_scripts_to_run= ${{ steps.scripts_required_to_run.outputs.scripts_for_prod_json }}
+            prod_scripts_to_run= "${{ steps.scripts_required_to_run.outputs.scripts_for_prod_json }}"
             echo "Production script names is - ${prod_scripts_to_run}"
             IFS=',' read -ra ADDR <<< "${prod_scripts_to_run}"
             for i in "${ADDR[@]}"; do
