@@ -108,4 +108,4 @@ runs:
             echo "scripts_for_prod_json=$scripts_for_prod" >> $GITHUB_OUTPUT
             echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
      
-      shell: bash
+       shell: bash
