@@ -38,7 +38,13 @@ runs:
   steps:
      - name: Sort all the script filenames & execute them in order        
        id: scripts_required_to_run
-       run: |
+       run:
+         using: 'docker'
+         image: 'docker://postgres:latest'
+         args:
+          - sh
+          - -c
+          - | 
             migrationFolder="${{ inputs.folder-name }}"
             migrationHistoryVersion="${{ inputs.db-current-version }}"
             # Access the hashmap JSON string           
