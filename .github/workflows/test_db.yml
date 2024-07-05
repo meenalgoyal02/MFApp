@@ -284,12 +284,19 @@ jobs:
             #     done
             #     echo -e "\033[0;32mExecution completed on Production db.\033[0m"
             # fi
-            # echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
+            echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
        - name: Run the scripts on Production
+         if: ${{steps.scripts_required_to_run.outputs.can_run_on_prod=='true'}}
          run: |
             prod_scripts_to_run="${{ steps.scripts_required_to_run.outputs.scripts_for_prod_json }}"
             echo "Production script names is - $prod_scripts_to_run"
-            IFS=',' read -ra ADDR <<< "${prod_scripts_to_run}"
-            for i in "${ADDR[@]}"; do
-                echo "String: $i"
+            echo "Running scripts on Prod db..."
+            IFS=',' read -ra scripts <<< "${prod_scripts_to_run}"
+            for script_name in "${scripts[@]}"; do
+                echo "String: $script_name"
+                file="${MIGRATION_FOLDER}/${script_name}"
+                export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
+                echo "Executing file- ${file}"
+                psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"                                           
             done
+            echo -e "\033[0;32mExecution completed on Production db.\033[0m"
