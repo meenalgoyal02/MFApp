@@ -201,90 +201,87 @@ jobs:
     #         if [[ "${{ steps.shadow-db.outputs.version }}" != "${{ steps.prod-db.outputs.version }}" ]]; then 
     #             echo -e "\033[0;33mWarning: Prod db version is not same as shadow db version. Please take corrective action.\033[0m"                                
     #         fi
-        
-       - name: Sort all the script filenames & execute them in order        
+       - name: Sort scripts using action
          id: scripts_required_to_run
-         run: |
-            # migrationFolder="${{ needs.get-files-from-folder.outputs}}"
-            migrationHistoryVersion="${{ needs.migration-required-or-not.outputs.ddl }}"
-            echo "migrationHistoryVersion: $migrationHistoryVersion"
-            declare -A hashmap
-            declare -A scriptToExecute
-            i=0
-            j=0
-            echo "${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}"
-            # Access the hashmap JSON string
-            hashmap_json=${{ needs.get-files-from-folder.outputs.ddl_scriptFileHash }}
+         uses: ./.github/actions/sort_and_run_scripts_on_shadow_db
+         with:
+            folder-name: ${{ env.MIGRATION_FOLDER }}   
+            db-current-version: ${{ needs.migration-required-or-not.outputs.ddl }}
+            scripts-file-hash: ${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}
+            pg_host: 'localhost'
+            pg_user: 'postgres'
+            pg_password: 'postgres'
+            pg_db: 'shadowdb'
+            pg_port: '5432'
+                      
+    #    - name: Sort all the script filenames & execute them in order        
+    #      id: scripts_required_to_run
+    #      run: |
+    #         # migrationFolder="${{ needs.get-files-from-folder.outputs}}"
+    #         migrationHistoryVersion="${{ needs.migration-required-or-not.outputs.ddl }}"
+    #         echo "migrationHistoryVersion: $migrationHistoryVersion"
+    #         declare -A hashmap
+    #         declare -A scriptToExecute
+    #         i=0
+    #         j=0
+    #         echo "${{needs.get-files-from-folder.outputs.ddl_scriptFileHash}}"
+    #         # Access the hashmap JSON string
+    #         hashmap_json=${{ needs.get-files-from-folder.outputs.ddl_scriptFileHash }}
             
-            # Deserialize JSON to an associative array
-            IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
+    #         # Deserialize JSON to an associative array
+    #         IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
             
-            for key in ${tempArray[@]}; do
-                i=$((i + 1))      
-                if [ $(($i%2)) == 0 ]; then                                         
-                    hashmap["${tempArray[$((i-1))]}"]="${key}"                       
-                else                 
-                    tempkey="${key}"                 
-                fi
-            done
+    #         for key in ${tempArray[@]}; do
+    #             i=$((i + 1))      
+    #             if [ $(($i%2)) == 0 ]; then                                         
+    #                 hashmap["${tempArray[$((i-1))]}"]="${key}"                       
+    #             else                 
+    #                 tempkey="${key}"                 
+    #             fi
+    #         done
 
-            #output the hashed set from the step.
-            sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
+    #         #output the hashed set from the step.
+    #         sorted_keys=($(for key in "${!hashmap[@]}"; do echo "$key"; done | sort))
 
-            can_run_on_prod=true
-            echo "Running scripts over Shadow db...."
-            for key in "${sorted_keys[@]}"; do              
-                value=${hashmap[$key]}
-                file="${MIGRATION_FOLDER}/${value}"
+    #         can_run_on_prod=true
+    #         echo "Running scripts over Shadow db...."
+    #         for key in "${sorted_keys[@]}"; do              
+    #             value=${hashmap[$key]}
+    #             file="${MIGRATION_FOLDER}/${value}"
                 
-                echo "Executing script file: ${file}"
-                export PGPASSWORD=postgres
-                query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
-                # Convert output to lowercase
-                converted_output="${query_output,,}"
-                echo "Query output: ${converted_output}"
-                echo "-----------------------------------------------------------------------"
+    #             echo "Executing script file: ${file}"
+    #             export PGPASSWORD=postgres
+    #             query_output=$(psql -h 'localhost' -p '5432' -U postgres  -d shadowDb  -f "$file" 2>&1)
+    #             # Convert output to lowercase
+    #             converted_output="${query_output,,}"
+    #             echo "Query output: ${converted_output}"
+    #             echo "-----------------------------------------------------------------------"
 
-                if echo "$converted_output" | grep -q "error"; then
-                    can_run_on_prod=false
-                    echo -e "\033[0;31mError in script execution. Can not run on Prod.\033[0m"
-                    break;
-                fi
-            done
+    #             if echo "$converted_output" | grep -q "error"; then
+    #                 can_run_on_prod=false
+    #                 echo -e "\033[0;31mError in script execution. Can not run on Prod.\033[0m"
+    #                 break;
+    #             fi
+    #         done
             
-            echo "Execution completed on Shadow db."
-            echo "can_run_on_prod=$can_run_on_prod" >>"$GITHUB_OUTPUT"
+    #         echo "Execution completed on Shadow db."
+    #         echo "can_run_on_prod=$can_run_on_prod" >>"$GITHUB_OUTPUT"
 
-            # Create the array of filenames to execute on Prod
-            if [ "$can_run_on_prod" = true ]; then
-                 for key in "${!hashmap[@]}"; do             
-                    if(($key>$migrationHistoryVersion)); then 
-                        scriptToExecute[$j]="${hashmap[$key]}"
-                        j=$((j + 1))
-                    fi
-                 done
-            fi
+    #         # Create the array of filenames to execute on Prod
+    #         if [ "$can_run_on_prod" = true ]; then
+    #              for key in "${!hashmap[@]}"; do             
+    #                 if(($key>$migrationHistoryVersion)); then 
+    #                     scriptToExecute[$j]="${hashmap[$key]}"
+    #                     j=$((j + 1))
+    #                 fi
+    #              done
+    #         fi
 
-            #convert into a json to output the same.
-            scripts_for_prod=$(IFS=,; echo "${scriptToExecute[*]}")
-            echo "scripts_for_prod_json=$scripts_for_prod" >> $GITHUB_OUTPUT
-
-
-            # if [ "$can_run_on_prod" = true ]; then
-            #     echo "Running scripts on Prod db..."
-            #     # run incremental scripts on Prod db.
-            #     for key in "${!hashmap[@]}"; do             
-            #     if(($key>$migrationHistoryVersion)); then 
-                    
-            #         file="${MIGRATION_FOLDER}/${hashmap[$key]}"
-            #         export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-            #         echo "Executing file- ${file}"
-            #         psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
-            #     fi
-            #     done
-            #     echo -e "\033[0;32mExecution completed on Production db.\033[0m"
-            # fi
-            echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
+    #         #convert into a json to output the same.
+    #         scripts_for_prod=$(IFS=,; echo "${scriptToExecute[*]}")
+    #         echo "scripts_for_prod_json=$scripts_for_prod" >> $GITHUB_OUTPUT
+    #         echo "shadow_db_run_successful=$can_run_on_prod" >> "$GITHUB_OUTPUT"
+       
        - name: Run the scripts on Production
          if: ${{steps.scripts_required_to_run.outputs.can_run_on_prod=='true'}}
          run: |
