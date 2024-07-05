@@ -76,8 +76,8 @@ runs:
             file="${migrationFolder}/${value}"
             
             echo "Executing script file: ${file}"
-            export PGPASSWORD=${pg_password}
-            query_output=$(psql -h $pg_host -p $pg_port -U $pg_user  -d $pg_db  -f "$file" 2>&1)
+            export PGPASSWORD="${{ inputs.pg_password }}"
+            query_output=$(psql -h "${{ inputs.pg_host }}" -p "${{ inputs.pg_port }}" -U "${{ inputs.pg_user }}"  -d "${{ inputs.pg_db }}"  -f "$file" 2>&1)
             
             # Convert output to lowercase
             converted_output="${query_output,,}"
