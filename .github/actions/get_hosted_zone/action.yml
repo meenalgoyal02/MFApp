@@ -53,8 +53,8 @@ runs:
                  tag= $(aws route53 list-tags-for-resource --resource-type hostedzone --resource-id $id  --query ResourceTagSet.Tags[?Key==\`${tagKey}\`] --output text)
 
                  echo "Output tag value-$tag"
-                
-                if [[ "${tag}" != "null" ]]; then
+                               
+                if [[ "$tag" == "*${tagValue}*""  ]]; then
                   hostedzone_id=$id
                   break;
                 fi 
@@ -64,5 +64,6 @@ runs:
              echo "HostedZone-$hostedzone_id"
             
         fi;
+        echo "Resource-id:$hostedzone_id"
         echo "resource-id=$hostedzone_id">> "$GITHUB_OUTPUT" 
       shell: bash
