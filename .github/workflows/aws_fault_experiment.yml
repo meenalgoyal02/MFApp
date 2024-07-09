@@ -37,7 +37,8 @@ jobs:
     - name: Monitor FIS experiment
       run: |
         state="running"
-        while [ "$state" == "running" ] || [ "$state" == "initiating" ]; do
+
+        while [echo "$state" | grep -q "running"] || [echo "$state" | grep -q "initiating"]; do        
           state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
           echo "Current state: $state"
           sleep 10
