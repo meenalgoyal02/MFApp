@@ -41,7 +41,7 @@ jobs:
         while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
           # state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
           #echo "Current state: $state"
-          state = "initiating operation"
+          state="initiating operation"
           echo "Debug"
           # sleep 10
         done

@@ -219,9 +219,9 @@ jobs:
       
       - name: Notification Content
         id: notification-content
-        run: |
-            
-            if [[ "${{ steps.scripts_required_to_run.outputs.can_run_on_prod }}" == "true" ]]; then
+        run: |    
+            echo "Output of above step- ${{ steps.scripts_required_to_run.outputs.shadow_db_run_successful }}"        
+            if [[ "${{ steps.scripts_required_to_run.outputs.shadow_db_run_successful }}" == "true" ]]; then
                 subject="DB script updates completed on Production DB."
             else
                 subject="Error in script execution on Shadow DB."
