@@ -33,7 +33,7 @@ jobs:
           # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'          
           query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d $RDS_DB -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)         
           echo "migration_history_version=$query_output" >> "$GITHUB_OUTPUT"      
-          echo "MigrationHistoryVersion=$query_output">> "$GITHUB_OUTPUT" 
+          echo "MigrationHistoryVersion=$query_output" >> "$GITHUB_OUTPUT" 
           
       - name: Get all the scripts from configured folder
         id: filename_read
