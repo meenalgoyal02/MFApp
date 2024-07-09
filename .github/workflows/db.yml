@@ -1,6 +1,6 @@
 name: DB script execution automation
 
-on: push
+on: workflow_dispatch
 
 env:
   PGPASSWORD: ${{ secrets.RDS_PASSWORDS }}

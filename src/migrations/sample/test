@@ -1,0 +1,14 @@
+create table "_MigrationsHistory"(
+    migration_id SERIAL PRIMARY KEY,
+    ddl character varying(32) NOT NULL,
+	triggers character varying(32) NOT NULL,
+	stored_procedure character varying(32) NOT NULL
+);
+
+
+ delete from "__MigrationsHistory";
+
+ insert into "_MigrationsHistory"(migration_id,ddl,triggers,stored_procedure) 
+	values (1,1,2,3);
+
+    select * from "_MigrationsHistory";
