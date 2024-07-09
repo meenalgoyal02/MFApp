@@ -49,7 +49,7 @@ runs:
 
             # Step 2: Find the hosted zone by its tag
             for id in $hosted_zone_ids; do
-                 tag= $(aws route53 list-tags-for-resource --resource-type hostedzone --resource-id $id --profile nagarro --query ResourceTagSet.Tags[?Key==`"$tagKey"`] --output text)
+                 tag= $(aws route53 list-tags-for-resource --resource-type hostedzone --resource-id $id --profile nagarro --query ResourceTagSet.Tags[?Key==`"${tagKey}"`] --output text)
 
                  echo "Output tag value-$tag"
                 
