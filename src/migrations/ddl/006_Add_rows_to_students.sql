@@ -3,4 +3,4 @@ INSERT INTO students (name, age) VALUES
   ('e', 28),
   ('f', 18);
 
-  insert into "__MigrationsHistory"(migration_id,product_version) values(2,'6');
+  insert into "__MigrationsHistory"(migration_id,product_version) values(3,'6');
