@@ -54,7 +54,7 @@ runs:
 
                  echo "Output tag value-$tag"
                                
-                if [[ "$tag" == "*${tagValue}*"  ]]; then
+                if [[ "$tag" == *${tagValue}*  ]]; then
                   hostedzone_id=$id
                   break;
                 fi 
