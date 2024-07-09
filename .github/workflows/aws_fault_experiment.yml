@@ -2,10 +2,10 @@ name: Run AWS FIS Experiment
 
 on:
   workflow_dispatch:
-    # inputs:
-    #   EXPERIMENT_TEMPLATE_ID:
-    #     description: 'The ID of the FIS experiment template'
-    #     required: true
+    inputs:
+      EXPERIMENT_TEMPLATE_ID:
+        description: 'The ID of the FIS experiment template'
+        required: true
      
 
 env:
@@ -27,22 +27,20 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    # - name: Start FIS experiment
-    #   id: start_experiment
-    #   run: |
-    #     experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ github.event.inputs.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
-    #     echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
-    #     echo "Experiment started with ID: $experiment_id"
+    - name: Start FIS experiment
+      id: start_experiment
+      run: |
+        experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ github.event.inputs.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
+        echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
+        echo "Experiment started with ID: $experiment_id"
 
     - name: Monitor FIS experiment
       run: |
         state="running"
 
         while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
-          # state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
-          #echo "Current state: $state"
-          state="initiating operation"
-          echo "Debug"
-          # sleep 10
+          state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
+          echo "Current state: $state"
+          sleep 120
         done
         echo "Experiment completed with state: $state"
