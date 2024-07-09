@@ -53,7 +53,7 @@ runs:
 
                  echo "Output tag value-$tag"
                 
-                if[[ "${tag}" != "null" ]]; then
+                if [[ "${tag}" != "null" ]]; then
                   hostedzone_id=$id
                   break;
                 fi 
