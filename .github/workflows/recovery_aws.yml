@@ -65,7 +65,7 @@ jobs:
    
         - name: Set Route53 weight in alternate region
           id: disaster-recovery        
-          if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' }}
+          #if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' }}
           run: |
             hosted_zone_id=${{ steps.get-hosted-zone-id.resource-id }}
             echo "Hosted-zone id-$hosted_zone_id"
