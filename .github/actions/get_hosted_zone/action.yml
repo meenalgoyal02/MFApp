@@ -60,7 +60,8 @@ runs:
                 fi 
             done
         else
-             hostedzone_id=$(aws route53 list-hosted-zones --query HostedZones[?Name==\`${resourceName}\`].Id --output text)
+             hostedzone_id_temp=$(aws route53 list-hosted-zones --query HostedZones[?Name==\`${resourceName}\`].Id --output text)
+             hostedzone_id=$(echo $hostedzone_id_temp | sed 's#/hostedzone/##')
              echo "HostedZone-$hostedzone_id"
             
         fi;
