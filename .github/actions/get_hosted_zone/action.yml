@@ -54,13 +54,13 @@ runs:
 
                  echo "Output tag value-${tag}"
                                
-                # if [[ "$tag" == *${tagValue}* ]]; then
-                #   hostedzone_id=$id
-                #   break;
-                # fi 
+                if [[ "$tag" == *${tagValue}* ]]; then
+                  hostedzone_id=$id
+                  break;
+                fi 
             done
         else
-             hostedzone_id=$(aws route53 list-hosted-zones --query HostedZones[?Name==/`${resourceName}/`].Id --output text)
+             hostedzone_id=$(aws route53 list-hosted-zones --query HostedZones[?Name==\`${resourceName}\`].Id --output text)
              echo "HostedZone-$hostedzone_id"
             
         fi;
