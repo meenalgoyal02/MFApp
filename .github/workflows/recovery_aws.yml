@@ -37,18 +37,7 @@ jobs:
             resource-name: ''               
             resource-tag-name: ${{ env.ALB_TAG_KEY }}              
             resource-tag-value: ${{ env.ALB_TAG_VALUE }} 
-            
-        # - name: Retrieve id of hosted-zone
-        #   id: get-hosted-zone-id-by-name
-        #   uses: ./.github/actions/get_resource_by_id
-        #   with:
-        #     aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
-        #     aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
-        #     aws-region: ${{ env.AWS_REGION }}              
-        #     resource-type: 'hosted-zone'               
-        #     resource-name: 'srepoc.com.'               
-        #     resource-tag-name: ${{ env.ALB_TAG_KEY }}              
-        #     resource-tag-value: ${{ env.ALB_TAG_VALUE }}
+
 
         - name: Retrieve DNS name of load balancer for secondary region
           id: secondary-alb-dns-name 
