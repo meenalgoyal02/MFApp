@@ -28,7 +28,7 @@ jobs:
       
         - name: Retrieve id of hosted-zone
           id: get-hosted-zone-id 
-          uses: ./.github/actions/get_hosted_zone
+          uses: ./.github/actions/get_resource_by_id
           with:
             aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
             aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
@@ -40,7 +40,7 @@ jobs:
             
         - name: Retrieve id of hosted-zone
           id: get-hosted-zone-id-by-name
-          uses: ./.github/actions/get_hosted_zone
+          uses: ./.github/actions/get_resource_by_id
           with:
             aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
             aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
@@ -50,17 +50,17 @@ jobs:
             resource-tag-name: ${{ env.ALB_TAG_KEY }}              
             resource-tag-value: ${{ env.ALB_TAG_VALUE }}
 
-        # - name: Retrieve DNS name of load balancer for secondary region
-        #   id: secondary-alb-dns-name 
-        #   uses: ./.github/actions/get_resource_by_id
-        #   with:
-        #     aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
-        #     aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
-        #     aws-region: ${{ env.AWS_REGION }}              
-        #     resource-type: 'ALB'               
-        #     resource-name: ''               
-        #     resource-tag-name: ${{ env.ALB_TAG_KEY }}              
-        #     resource-tag-value: ${{ env.ALB_TAG_VALUE }}                   
+        - name: Retrieve DNS name of load balancer for secondary region
+          id: secondary-alb-dns-name 
+          uses: ./.github/actions/get_resource_by_id
+          with:
+            aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+            aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+            aws-region: ${{ env.AWS_REGION }}              
+            resource-type: 'ALB'               
+            resource-name: ''               
+            resource-tag-name: ${{ env.ALB_TAG_KEY }}              
+            resource-tag-value: ${{ env.ALB_TAG_VALUE }}                   
                 
    
         - name: Set Route53 weight in alternate region
@@ -69,6 +69,8 @@ jobs:
           run: |
             hosted_zone_id=${{ steps.get-hosted-zone-id.outputs.resource-id }}
             echo "Hosted-zone id-$hosted_zone_id"
+            alb_id=${{ steps.secondary-alb-dns-name.outputs.resource-id }}
+            echo "ALB id-$alb_id"
             # set route 53 records update           
             # CHANGE_OUTPUT=$(aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch "{ \"Comment\": \"Changes weights of passive region from 0 to 100\",\"Changes\": [{ \"Action\": \"UPSERT\",
             # \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.SECONDARY_CNAME_IDENTIFIER }}\",\"Weight\": 100,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${{ steps.secondary-alb-dns-name.outputs.resource-id }} \"}]  }}]}")
