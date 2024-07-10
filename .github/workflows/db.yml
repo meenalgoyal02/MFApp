@@ -209,10 +209,15 @@ jobs:
               # run incremental scripts on Prod db.
               for key in "${sorted_keys[@]}"; do             
                 if(($key>$migrationHistoryVersion)); then 
-                  
-                  file="${MIGRATION_FOLDER}/${hashmap[$key]}"
+                  value=${hashmap[$key]}
+                  file="${MIGRATION_FOLDER}/${value}"
+                
+                  echo "Executing script file: ${file}"  
+
+
+                  #file="${MIGRATION_FOLDER}/${hashmap[$key]}"
                   export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-                  echo "Executing file- ${file}"
+                  #echo "Executing file- ${file}"
                   psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
                 fi
               done
