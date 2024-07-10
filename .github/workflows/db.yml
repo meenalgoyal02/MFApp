@@ -207,7 +207,7 @@ jobs:
             if [ "$can_run_on_prod" = true ]; then
               echo "Running scripts on Prod db..."
               # run incremental scripts on Prod db.
-              for key in "${!hashmap[@]}"; do             
+              for key in "${sorted_keys[@]}"; do             
                 if(($key>$migrationHistoryVersion)); then 
                   
                   file="${MIGRATION_FOLDER}/${hashmap[$key]}"
