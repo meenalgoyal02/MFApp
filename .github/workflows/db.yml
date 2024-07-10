@@ -30,8 +30,10 @@ jobs:
       - name: Get migration history version
         id: get_migration_history
         run: |
-          # aws rds describe-db-instances --region $AWS_REGION --query DBInstances --output text | grep -oE 'pocdb1'          
           query_output=$(psql -h $RDS_HOST -p $RDS_PORT -U $RDS_USERNAME -d $RDS_DB -t -c "select product_version from \"__MigrationsHistory\" order by migration_id desc limit 1" 2>&1)         
+          if [ -z "$query_output" ]; then
+            query_output="0"
+          fi;
           echo "migration_history_version=$query_output" >> "$GITHUB_OUTPUT"      
           echo "MigrationHistoryVersion=$query_output" >> "$GITHUB_OUTPUT" 
           
@@ -204,12 +206,17 @@ jobs:
             if [ "$can_run_on_prod" = true ]; then
               echo "Running scripts on Prod db..."
               # run incremental scripts on Prod db.
-              for key in "${!hashmap[@]}"; do             
+              for key in "${sorted_keys[@]}"; do             
                 if(($key>$migrationHistoryVersion)); then 
-                  
-                  file="${MIGRATION_FOLDER}/${hashmap[$key]}"
+                  value=${hashmap[$key]}
+                  file="${MIGRATION_FOLDER}/${value}"
+                
+                  echo "Executing script file: ${file}"  
+
+
+                  #file="${MIGRATION_FOLDER}/${hashmap[$key]}"
                   export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-                  echo "Executing file- ${file}"
+                  #echo "Executing file- ${file}"
                   psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
                 fi
               done
