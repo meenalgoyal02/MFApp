@@ -1,0 +1,8 @@
+name: Workflow for simulation of outage in the Primary AWS region
+on: workflow_dispatch
+jobs:
+   run_disaster:    
+    uses: ./.github/workflows/disaster_aws.yml
+    with: 
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
