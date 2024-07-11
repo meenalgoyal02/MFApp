@@ -1,9 +1,14 @@
 name: Simulate disaster in specified region.
-on: workflow_dispatch
+on:  
+  workflow_call:
+      inputs:    
+        AWS_ACCESS_KEY_ID:
+              required: true
+              type: string
+        AWS_SECRET_ACCESS_KEY:
+                  required: true
+                  type: string
 
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
     aws-cli-in-github-actions:
