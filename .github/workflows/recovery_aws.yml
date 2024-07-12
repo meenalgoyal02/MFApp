@@ -1,12 +1,20 @@
 name: Recovery steps in Secondary region.
-on: workflow_dispatch
-
-env:  
-    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+on: 
+  workflow_call:
+    secrets:    
+      AWS_ACCESS_KEY_ID:
+            required: true
+            
+      AWS_SECRET_ACCESS_KEY:
+                required: true
+      SMTP_PASSWORD:
+              required: true
 
 jobs:
     aws-cli-in-github-actions:
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v2
@@ -83,3 +91,34 @@ jobs:
                 fi
               done
               echo "Change $CHANGE_ID is now INSYNC."  
+        - name: Verify whether the URL is down or not
+          continue-on-error: true
+          id: verify-region-is-down
+          run: |  
+                sleep 120                   
+                HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+                echo "HTTP Status- ${HTTP_STATUS}"
+                if [ "$HTTP_STATUS" -eq 503 ]; then
+                  echo "Region down completed."
+                  echo "::set-output name=Region-down::true"
+                  echo "::set-output name=Email-subject:: Primary region is down for Repository- ${{ github.repository }}"
+                else
+                  echo "Region down could not be completed."
+                  echo "::set-output name=Region-down::false"
+                  echo "::set-output name=Email-subject:: Failed in setting Primary region down. "
+                fi
+    
+        - name: Send notification email          
+          uses: dawidd6/action-send-mail@v3
+          with:
+                  server_address: smtp.gmail.com
+                  server_port: 465
+                  secure: true
+                  from:  ${{ env.SENDER_EMAIL_ID }}
+                  to: ${{ env.RECEIVER_EMAIL_ID }}
+                  username:  ${{env.SENDER_EMAIL_ID}}
+                  password: ${{ secrets.SMTP_PASSWORD }}
+                  subject: ${{ steps.verify-region-is-down.outputs.Email-subject }}                  
+                  body:  |
+                      Gameday Preparation completed with the run of GitHub workflow. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                      Please check the application and take recovery steps, as required.              

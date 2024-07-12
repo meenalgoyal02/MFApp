@@ -9,11 +9,16 @@ on:
                   required: true
         SMTP_PASSWORD:
                 required: true
-                  
+      outputs:
+            region-failover-successful:
+              description: "Boolean value to indicate whether region down was successful or not"
+              value: ${{ jobs.aws-cli-in-github-actions.outputs.region-down-or-not }}                
 
 
 jobs:
     aws-cli-in-github-actions:
+      outputs: 
+        region-down-or-not: ${{ steps.verify-region-is-down.outputs.Region-down }}
       runs-on: ubuntu-latest
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -100,7 +105,7 @@ jobs:
           continue-on-error: true
           id: verify-region-is-down
           run: |  
-            sleep 60                   
+            sleep 120                   
             HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
             echo "HTTP Status- ${HTTP_STATUS}"
             if [ "$HTTP_STATUS" -eq 503 ]; then
