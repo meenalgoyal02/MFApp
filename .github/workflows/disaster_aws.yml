@@ -7,6 +7,8 @@ on:
               
         AWS_SECRET_ACCESS_KEY:
                   required: true
+        SMTP_PASSWORD:
+                required: true
                   
 
 

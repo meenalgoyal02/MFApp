@@ -12,12 +12,13 @@ on:
             - system-failover
 
 jobs:
-  call-workflow-passing-data:
+  run-region-failover:
     if: ${{github.event.inputs.outage-type=='region-failover'}}
     uses: ./.github/workflows/disaster_aws.yml
     secrets:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}     
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}     
   run-experiment:
     if: ${{github.event.inputs.outage-type=='system-failover'}}
     uses: ./.github/workflows/aws_fault_experiment.yml
