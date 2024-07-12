@@ -8,7 +8,8 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
-  migration-required-or-not:
+
+  change-identification:
     runs-on: ubuntu-latest
     outputs:
       dbUpdateRequired: ${{steps.filename_read.outputs.dbUpdateRequired}}
@@ -92,7 +93,7 @@ jobs:
           echo "scriptFileHash=$hashmap_json">> "$GITHUB_OUTPUT"    
  
   script-validation-on-shadow-db:
-    needs: migration-required-or-not
+    needs: change-identification
     runs-on: ubuntu-latest    
 
     # Service containers to run with `container-job`
@@ -116,7 +117,7 @@ jobs:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
 
-    if: ${{needs.migration-required-or-not.outputs.dbUpdateRequired=='true'}}
+    if: ${{needs.change-identification.outputs.dbUpdateRequired=='true'}}
     steps: 
       - name: Check out repository code
         uses: actions/checkout@v2
@@ -158,13 +159,13 @@ jobs:
       - name: Sort all the script filenames & execute them in order        
         id: scripts_required_to_run
         run: |
-            migrationHistoryVersion="${{ needs.migration-required-or-not.outputs.MigrationHistoryVersion }}"
+            migrationHistoryVersion="${{ needs.change-identification.outputs.MigrationHistoryVersion }}"
             #echo "migrationHistoryVersion: $migrationHistoryVersion"
             declare -A hashmap
             i=0
-            #echo "${{needs.migration-required-or-not.outputs.scriptFileHash}}"
+            #echo "${{needs.change-identification.outputs.scriptFileHash}}"
             # Access the hashmap JSON string
-            hashmap_json=${{ needs.migration-required-or-not.outputs.scriptFileHash }}
+            hashmap_json=${{ needs.change-identification.outputs.scriptFileHash }}
             
             # Deserialize JSON to an associative array
             IFS=':,{}' read -ra tempArray <<< "$hashmap_json"           
@@ -205,19 +206,26 @@ jobs:
 
             if [ "$can_run_on_prod" = true ]; then
               echo "Running scripts on Prod db..."
+            
               # run incremental scripts on Prod db.
               for key in "${sorted_keys[@]}"; do             
                 if(($key>$migrationHistoryVersion)); then 
                   value=${hashmap[$key]}
-                  file="${MIGRATION_FOLDER}/${value}"
-                
+                  file="${MIGRATION_FOLDER}/${value}"              
                   echo "Executing script file: ${file}"  
-
-
-                  #file="${MIGRATION_FOLDER}/${hashmap[$key]}"
                   export PGPASSWORD=${{ secrets.RDS_PASSWORDS }}
-                  #echo "Executing file- ${file}"
-                  psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file"           
+                  prod_query_output=$(psql -h $RDS_HOST -d $RDS_DB -p $RDS_PORT -U $RDS_USERNAME -f "$file" 2>&1)   
+                 
+                  # Convert output to lowercase
+                  converted_query_output="${prod_query_output,,}"
+                  echo "Query output: ${converted_query_output}"  
+                  echo "-----------------------------------------------------------------------"
+
+                  if echo "$converted_output" | grep -q "error"; then
+                    can_run_on_prod=false
+                    echo -e "\033[0;31mError while executing on Prod.\033[0m"
+                    break;
+                  fi      
                 fi
               done
               echo -e "\033[0;32mExecution completed on Production db.\033[0m"
