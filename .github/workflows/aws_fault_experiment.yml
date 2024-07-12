@@ -35,7 +35,7 @@ jobs:
     - name: Start FIS experiment
       id: start_experiment
       run: |
-        experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ github.event.inputs.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
+        experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
         echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
         echo "Experiment started with ID: $experiment_id"
 
