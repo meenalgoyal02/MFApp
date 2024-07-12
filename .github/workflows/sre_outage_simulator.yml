@@ -1,10 +1,27 @@
 name: Workflow for simulation of outage in the Primary AWS region
 on: 
-  workflow_dispatch
+  workflow_dispatch:
+     inputs:
+        outage-type:
+          description: 'Select the outage type to run the workflow'
+          required: true
+          default: 'disaster'
+          type: choice
+          options:
+            - disaster
+            - experiment
 
 jobs:
   call-workflow-passing-data:
+    if: ${{github.event.inputs.outage-type=='disaster'}}
     uses: ./.github/workflows/disaster_aws.yml
     with:
       AWS_SECRET_ACCESS_KEY: secrets.AWS_SECRET_ACCESS_KEY
       AWS_ACCESS_KEY_ID: secrets.AWS_ACCESS_KEY_ID    
+  run-experiment:
+    if: ${{github.event.inputs.outage-type=='experiment'}}
+    uses: ./.github/workflows/aws_fault_experiment.yml
+    with:
+      AWS_SECRET_ACCESS_KEY: secrets.AWS_SECRET_ACCESS_KEY
+      AWS_ACCESS_KEY_ID: secrets.AWS_ACCESS_KEY_ID         
+       
