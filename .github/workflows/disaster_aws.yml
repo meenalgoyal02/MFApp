@@ -149,17 +149,7 @@ jobs:
             fi
            
             value+="<h2><strong>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</strong></h2>
-            <ol>
-                <li>Activity Name: Disaster simulation</li>
-                <li>AWS Region: ${{ env.AWS_PRIMARY_REGION }} </li>
-                <li>Impacted resources-<ol>
-                        <li>ASG: ${{ env.ASG_NAME }}</li>
-                        <li>Hosted-zone:${{ env.CNAME }}</li>
-                    </ol>
-                </li>
-                <li>Activity Start Time:${{ steps.start-date.outputs.value }}</li>
-                <li>Activity End Time:${{ steps.end-date.outputs.value }}<br>&nbsp;</li>
-            </ol>"
+            <ol><li>Activity Name: Disaster simulation</li><li>AWS Region: ${{ env.AWS_PRIMARY_REGION }} </li><li>Impacted resources-<ol><li>ASG: ${{ env.ASG_NAME }}</li><li>Hosted-zone:${{ env.CNAME }}</li></ol></li><li>Activity Start Time:${{ steps.start-date.outputs.value }}</li><li>Activity End Time:${{ steps.end-date.outputs.value }}<br>&nbsp;</li></ol>"
             
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"

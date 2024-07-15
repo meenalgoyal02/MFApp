@@ -10,6 +10,9 @@ on:
           options:
             - region-failover
             - system-failover
+env:
+  SENDER_EMAIL_ID:'meenalgoyal02@gmail.com'
+  RECEIVER_EMAIL_ID:'meenal.goyal@nagarro.com'
 
 jobs:
   run-region-failover:
@@ -52,4 +55,19 @@ jobs:
 
           content+="<br><p>Click <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">here </a>to view the workflow logs.&nbsp;</p></body><html>"
           echo "Email content:${content}"
+          echo "content=$content">>"$GITHUB_OUTPUT"
+
+      - name: Send notification email          
+        uses: dawidd6/action-send-mail@v3
+        with:
+              server_address: smtp.gmail.com
+              server_port: 465
+              secure: true
+              from:  ${{ env.SENDER_EMAIL_ID }}
+              to: ${{ env.RECEIVER_EMAIL_ID }}
+              username:  ${{env.SENDER_EMAIL_ID}}
+              password: ${{ secrets.SMTP_PASSWORD }}
+              subject: 'Region failover completed'                 
+              body: |
+                ${{ steps.notification-email.outputs.content}}
        
