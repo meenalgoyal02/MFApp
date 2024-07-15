@@ -51,4 +51,5 @@ jobs:
           content+="${{ needs.run-recovery-scripts.outputs.conclusion }}"
 
           content+="<br><p>Click <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">here </a>to view the workflow logs.&nbsp;</p></body><html>"
+          echo "Email content:${content}"
        
