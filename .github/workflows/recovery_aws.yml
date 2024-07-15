@@ -9,9 +9,19 @@ on:
                 required: true
       SMTP_PASSWORD:
               required: true
+    outputs:
+      region-failover-successful:
+          description: "Boolean value to indicate whether region down was successful or not"
+          value: ${{ jobs.aws-cli-in-github-actions.outputs.region-up-or-not }}   
+      conclusion:
+          description: "Conclusion text that can be sent for notification"             
+          value: ${{ jobs.aws-cli-in-github-actions.outputs.conclusion }}   
 
 jobs:
     aws-cli-in-github-actions:
+      outputs: 
+        region-up-or-not: ${{ steps.verify-region-is-up.outputs.Region-up }}
+        conclusion: ${{ steps.conclusion.outputs.value }}
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -31,7 +41,17 @@ jobs:
           run: |
             python -m pip install --upgrade pip
             pip install awscli
-        - run: |
+        
+        - name: start date and time
+          id: start-date
+          run: |
+              currentDate=$(echo $(date))
+              echo "Current date-${currentDate}"
+              echo "value=$currentDate">>"$GITHUB_OUTPUT"
+
+        - name: recover-asg
+          id: recover-asg
+          run: |
            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 2 --min-size 0 --max-size 3 --region $AWS_REGION
       
         - name: Retrieve id of hosted-zone
@@ -91,34 +111,70 @@ jobs:
                 fi
               done
               echo "Change $CHANGE_ID is now INSYNC."  
-        - name: Verify whether the URL is down or not
+        - name: Verify whether the URL is up or not
           continue-on-error: true
-          id: verify-region-is-down
+          id: verify-region-is-up
           run: |  
                 sleep 120                   
                 HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
                 echo "HTTP Status- ${HTTP_STATUS}"
-                if [ "$HTTP_STATUS" -eq 503 ]; then
-                  echo "Region down completed."
-                  echo "::set-output name=Region-down::true"
-                  echo "::set-output name=Email-subject:: Primary region is down for Repository- ${{ github.repository }}"
+                if [ "$HTTP_STATUS" -eq 200 ]; then
+                  echo "Region up completed."
+                  echo "::set-output name=Region-up::true"
+                  echo "::set-output name=Email-subject:: Secondary region is up for Repository- ${{ github.repository }}"
                 else
-                  echo "Region down could not be completed."
-                  echo "::set-output name=Region-down::false"
-                  echo "::set-output name=Email-subject:: Failed in setting Primary region down. "
+                  echo "Region up could not be completed."
+                  echo "::set-output name=Region-up::false"
+                  echo "::set-output name=Email-subject:: Failed in setting Secondary region up. "
                 fi
+        - name: end date and time
+          id: end-date
+          run: |
+              currentDate=$(echo $(date))
+              echo "Current date-${currentDate}"
+              echo "value=$currentDate">>"$GITHUB_OUTPUT"
+
+        - name: action run summary
+          id: conclusion
+          run: |
+
+            outcomeOfHostUpdate=${{ steps.disaster-recovery.outcome }}
+            outcomeOfASGUpdate= ${{ steps.recover-asg.outcome }}
+
+            if [[ "$outcomeOfHostUpdate" == "failure" || "$outcomeOfASGUpdate" == "failure" ]]; then
+              value="<h2>Activity execution failed.<h2>"
+            else
+              value="<h2>Activity execution completed.<h2>"
+            fi
+            
+            value+="<h2><strong>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</strong></h2>
+            <ol>
+                <li>Activity Name: Disaster simulation</li>
+                <li>AWS Region: ${{ env.AWS_REGION }} </li>
+                <li>Impacted resources-<ol>
+                        <li>ASG: ${{ env.ASG_NAME }}</li>
+                        <li>Hosted-zone:${{ env.CNAME }}</li>
+                    </ol>
+                </li>
+                <li>Activity Start Time:${{ steps.start-date.outputs.value }}</li>
+                <li>Activity End Time:${{ steps.end-date.outputs.value }}<br>&nbsp;</li>
+            </ol>"
+            
+            echo "value=$value">>"$GITHUB_OUTPUT"
+            echo "Email content-$value"
+      
     
-        - name: Send notification email          
-          uses: dawidd6/action-send-mail@v3
-          with:
-                  server_address: smtp.gmail.com
-                  server_port: 465
-                  secure: true
-                  from:  ${{ env.SENDER_EMAIL_ID }}
-                  to: ${{ env.RECEIVER_EMAIL_ID }}
-                  username:  ${{env.SENDER_EMAIL_ID}}
-                  password: ${{ secrets.SMTP_PASSWORD }}
-                  subject: ${{ steps.verify-region-is-down.outputs.Email-subject }}                  
-                  body:  |
-                      Gameday Preparation completed with the run of GitHub workflow. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-                      Please check the application and take recovery steps, as required.              
+        # - name: Send notification email          
+        #   uses: dawidd6/action-send-mail@v3
+        #   with:
+        #           server_address: smtp.gmail.com
+        #           server_port: 465
+        #           secure: true
+        #           from:  ${{ env.SENDER_EMAIL_ID }}
+        #           to: ${{ env.RECEIVER_EMAIL_ID }}
+        #           username:  ${{env.SENDER_EMAIL_ID}}
+        #           password: ${{ secrets.SMTP_PASSWORD }}
+        #           subject: ${{ steps.verify-region-is-down.outputs.Email-subject }}                  
+        #           body:  |
+        #               Gameday Preparation completed with the run of GitHub workflow. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        #               Please check the application and take recovery steps, as required.              
