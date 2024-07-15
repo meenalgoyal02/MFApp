@@ -19,17 +19,17 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}  
-  run-recovery-scripts:
-     needs: run-region-failover
-     uses: ./.github/workflows/recovery_aws.yml
-     secrets:
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}          
-  run-experiment:
-    if: ${{github.event.inputs.outage-type=='system-failover'}}
-    uses: ./.github/workflows/aws_fault_experiment.yml
-    secrets:
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}        
+  # run-recovery-scripts:
+  #    needs: run-region-failover
+  #    uses: ./.github/workflows/recovery_aws.yml
+  #    secrets:
+  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #     SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}          
+  # run-experiment:
+  #   if: ${{github.event.inputs.outage-type=='system-failover'}}
+  #   uses: ./.github/workflows/aws_fault_experiment.yml
+  #   secrets:
+  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}        
        
