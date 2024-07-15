@@ -139,7 +139,7 @@ jobs:
           run: |
 
             outcomeOfHostUpdate=${{ steps.disaster-recovery.outcome }}
-            outcomeOfASGUpdate= ${{ steps.recover-asg.outcome }}
+            outcomeOfASGUpdate=${{ steps.recover-asg.outcome }}
 
             if [[ "$outcomeOfHostUpdate" == "failure" || "$outcomeOfASGUpdate" == "failure" ]]; then
               value="<h2>Activity execution failed.<h2>"
