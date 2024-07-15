@@ -48,7 +48,7 @@ jobs:
         id: notification-email
         if: ${{github.event.inputs.outage-type=='region-failover'}}
         run: |
-          content="<html><body><h1>Gameday Preparation completed with the run of GitHub workflow </h1>"
+          content="<html><body><h2>Gameday Preparation completed with the run of GitHub workflow </h2>"
           content+="${{ needs.run-region-failover.outputs.conclusion }}"
           content+="<br/>"
           content+="${{ needs.run-recovery-scripts.outputs.conclusion }}"
