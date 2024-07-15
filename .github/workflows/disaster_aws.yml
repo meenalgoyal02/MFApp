@@ -45,6 +45,8 @@ jobs:
           run: |
              currentDate=$(echo $(date))
              echo "Current date-${currentDate}"
+             echo "value=$currentDate">>"$GITHUB_OUTPUT"
+            
 
         # - name: Retrieve DNS name of load balancer for primary region
         #   id: primary-alb-dns-name 
@@ -123,6 +125,30 @@ jobs:
         #       echo "::set-output name=Region-down::false"
         #       echo "::set-output name=Email-subject:: Failed in setting Primary region down. "
         #     fi
+        
+        - name: end date and time
+          id: end-date
+          run: |
+              currentDate=$(echo $(date))
+              echo "Current date-${currentDate}"
+              echo "value=$currentDate">>"$GITHUB_OUTPUT"
+        - name: action run summary
+          id: conclusion
+          run: |
+            value="<h2><strong>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</strong></h2>
+            <ol>
+                <li>Activity Name: Disaster simulation</li>
+                <li>AWS Region: ${{ env.AWS_PRIMARY_REGION }} </li>
+                <li>Impacted resources-<ol>
+                        <li>ASG: ${{ env.ASG_NAME }}</li>
+                        <li>Hosted-zone:${{ env.CNAME }}</li>
+                    </ol>
+                </li>
+                <li>Activity Start Time:${{ steps.start-date.outputs.value }}</li>
+                <li>Activity End Time:${{ steps.end-date.outputs.value }}<br>&nbsp;</li>
+            </ol>"
+
+            echo "Email content-$value"
 
         # - name: Send notification email          
         #   uses: dawidd6/action-send-mail@v3
@@ -145,8 +171,8 @@ jobs:
         #                     <li>Hosted-zone:${{ env.CNAME }}</li>
         #                 </ol>
         #             </li>
-        #             <li>Activity Start Time:</li>
-        #             <li>Activity End Time:<br>&nbsp;</li>
+        #             <li>Activity Start Time:${{ steps.start-date.outputs.value }}</li>
+        #             <li>Activity End Time:${{ steps.end-date.outputs.value }}<br>&nbsp;</li>
         #         </ol>
               
                   
