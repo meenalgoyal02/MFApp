@@ -11,8 +11,8 @@ on:
             - region-failover
             - system-failover
 env:
-  SENDER_EMAIL_ID:'meenalgoyal02@gmail.com'
-  RECEIVER_EMAIL_ID:'meenal.goyal@nagarro.com'
+  SENDER_EMAIL_ID: 'meenalgoyal02@gmail.com'
+  RECEIVER_EMAIL_ID: 'meenal.goyal@nagarro.com'
 
 jobs:
   run-region-failover:
