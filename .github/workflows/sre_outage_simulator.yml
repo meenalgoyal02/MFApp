@@ -68,6 +68,6 @@ jobs:
               username:  ${{env.SENDER_EMAIL_ID}}
               password: ${{ secrets.SMTP_PASSWORD }}
               subject: 'Region failover completed'                 
-              body: |
+              html_body: |
                 ${{ steps.notification-email.outputs.content}}
        

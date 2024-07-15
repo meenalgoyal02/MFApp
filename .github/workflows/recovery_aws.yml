@@ -142,12 +142,12 @@ jobs:
             outcomeOfASGUpdate="${{ steps.recover-asg.outcome }}"
 
             if [[ "$outcomeOfHostUpdate" == "failure" || "$outcomeOfASGUpdate" == "failure" ]]; then
-              value="<h2>Activity execution failed.<h2>"
+              value="<h2>Disaster recovery failed.<h2>"
             else
-              value="<h2>Activity execution completed.<h2>"
+              value="<h2>Disaster recovery completed.<h2>"
             fi
             
-            value+="<h2><strong>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</strong></h2><ol><li>Activity Name: Disaster simulation</li><li>AWS Region: ${{ env.AWS_REGION }} </li<li>Impacted resources-<ol><li>ASG: ${{ env.ASG_NAME }}</li><li>Hosted-zone:${{ env.CNAME }}</li></ol></li><li>Activity Start Time:${{ steps.start-date.outputs.value }}</li><li>Activity End Time:${{ steps.end-date.outputs.value }}<br>&nbsp;</li></ol>"
+            value+="<h3><strong>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</strong></h3><ol><li>Activity Name: Disaster simulation</li><li>AWS Region: ${{ env.AWS_REGION }} </li><li>Impacted resources-<ol><li>ASG: ${{ env.ASG_NAME }}</li><li>Hosted-zone:${{ env.CNAME }}</li></ol></li><li>Activity Start Time:${{ steps.start-date.outputs.value }}</li><li>Activity End Time:${{ steps.end-date.outputs.value }}<br>&nbsp;</li></ol>"
             
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"
