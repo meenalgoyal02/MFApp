@@ -51,6 +51,7 @@ jobs:
 
         - name: recover-asg
           id: recover-asg
+          continue-on-error: true
           run: |
            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 2 --min-size 0 --max-size 3 --region $AWS_REGION
       
@@ -82,7 +83,7 @@ jobs:
    
         - name: Set Route53 weight in alternate region
           id: disaster-recovery        
-          #if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' }}
+          if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' }}
           run: |
             hosted_zone_id=${{ steps.get-hosted-zone-id.outputs.resource-id }}
             echo "Hosted-zone id-$hosted_zone_id"
@@ -128,6 +129,7 @@ jobs:
                   echo "::set-output name=Email-subject:: Failed in setting Secondary region up. "
                 fi
         - name: end date and time
+          continue-on-error: true
           id: end-date
           run: |
               currentDate=$(echo $(date))
@@ -135,6 +137,7 @@ jobs:
               echo "value=$currentDate">>"$GITHUB_OUTPUT"
 
         - name: action run summary
+          continue-on-error: true
           id: conclusion
           run: |
 
