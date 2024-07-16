@@ -52,6 +52,7 @@ jobs:
              echo "value=$currentDate">>"$GITHUB_OUTPUT"
             
         - name: Retrieve DNS name of load balancer for primary region
+          continue-on-error: true
           id: primary-alb-dns-name 
           uses: ./.github/actions/get_resource_by_id
           with:
@@ -63,7 +64,8 @@ jobs:
             resource-tag-name: ${{ env.ALB_TAG_KEY }}              
             resource-tag-value: ${{ env.ALB_TAG_VALUE }}   
                     
-        - name: Retrieve id of hosted-zone
+        - name: Retrieve id of hosted-zone 
+          continue-on-error: true
           id: get-hosted-zone-id-by-name
           uses: ./.github/actions/get_resource_by_id
           with:
@@ -76,6 +78,7 @@ jobs:
             resource-tag-value: ${{ env.ALB_TAG_VALUE }}
 
         - name: Set primary region CNAME weight to 0
+          continue-on-error: true
           id: disaster-in-primary-region
           if: ${{ steps.primary-alb-dns-name.outputs.resource-id !='' }}
           run: |
@@ -92,6 +95,7 @@ jobs:
                 echo "::set-output name=change_id::$CHANGE_ID"
 
         - name: Wait for Route53 Change to Become INSYNC
+          continue-on-error: true
           id: wait-for-insync-primary
           run: |
                    CHANGE_ID=${{ steps.disaster-in-primary-region.outputs.change_id }}

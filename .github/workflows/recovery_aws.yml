@@ -56,6 +56,7 @@ jobs:
            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 2 --min-size 0 --max-size 3 --region $AWS_REGION
       
         - name: Retrieve id of hosted-zone
+          continue-on-error: true
           id: get-hosted-zone-id 
           uses: ./.github/actions/get_resource_by_id
           with:
@@ -69,6 +70,7 @@ jobs:
 
 
         - name: Retrieve DNS name of load balancer for secondary region
+          continue-on-error: true
           id: secondary-alb-dns-name 
           uses: ./.github/actions/get_resource_by_id
           with:
@@ -82,6 +84,7 @@ jobs:
                 
    
         - name: Set Route53 weight in alternate region
+          continue-on-error: true
           id: disaster-recovery        
           if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' }}
           run: |
@@ -98,6 +101,7 @@ jobs:
             echo "::set-output name=change_id::$CHANGE_ID"
         
         - name: Wait for Route53 Change to Become INSYNC
+          continue-on-error: true
           id: wait-for-insync
           run: |
               CHANGE_ID=${{ steps.disaster-recovery.outputs.change_id }}

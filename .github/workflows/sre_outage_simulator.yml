@@ -45,6 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: send notification email
+        continue-on-error: true
         id: notification-email
         if: ${{github.event.inputs.outage-type=='region-failover'}}
         run: |
@@ -57,7 +58,8 @@ jobs:
           echo "Email content:${content}"
           echo "content=$content">>"$GITHUB_OUTPUT"
 
-      - name: Send notification email          
+      - name: Send notification email   
+        continue-on-error: true       
         uses: dawidd6/action-send-mail@v3
         with:
               server_address: smtp.gmail.com
