@@ -40,13 +40,15 @@ jobs:
 
   send-disaster-simulation-notification:
     needs: [run-region-failover, run-recovery-scripts, run-experiment]
-
+    if: |
+      always()
+      && contains(needs.*.result, 'success')
+      && !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: send notification email
         continue-on-error: true
-        id: notification-email-content
-        if: ${{github.event.inputs.outage-type=='region-failover'}}
+        id: notification-email-content        
         run: |
           content="<html><body>"
           if [[ "${{ github.event.inputs.outage-type }}" == "region-failover" ]]; then             
