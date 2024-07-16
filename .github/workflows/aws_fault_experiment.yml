@@ -46,6 +46,7 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Check current ASG desired capacity
+      continue-on-error: true
       id: asg-desired-capacity-before-experiment-run
       run: |
         value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
@@ -53,6 +54,7 @@ jobs:
         echo "value=$value">>"$GITHUB_OUTPUT"
 
     - name: Start FIS experiment
+      continue-on-error: true
       id: start_experiment
       run: |
         experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
@@ -60,6 +62,7 @@ jobs:
         echo "Experiment started with ID: $experiment_id"
 
     - name: Monitor FIS experiment
+      continue-on-error: true
       id: experiment-state
       run: |
         state="running"
@@ -73,6 +76,7 @@ jobs:
         echo "value=$state">>"$GITHUB_OUTPUT"
 
     - name: Check current ASG desired capacity
+      continue-on-error: true
       id: asg-desired-capacity-after-experiment-run
       run: |
         value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
@@ -87,9 +91,16 @@ jobs:
           echo "value=$currentDate">>"$GITHUB_OUTPUT"
 
     - name: Experinment report
+      continue-on-error: true
       id: conclusion
       run: |
-        conclusion="<p>System failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details</p> <table> <tbody> <tr> <td>1.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>2.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>3.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ steps.start_experiment.outputs.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ steps.start_experiment.outputs.experiment_id }}</td> </tr> <tr> <td>5.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>6.&nbsp;</td> <td><strong>AWS resources state impacted</strong></td> <td> <p>ASG name- ${{ env. ASG_NAME }}&nbsp;</p> <p>ASG desired capacity before run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ASG capacity after run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p> </td> </tr> <tr> <td>7.</td> <td><strong>Current state of experiment</strong></td> <td>Completed- Exited</td> </tr> <tr> <td>8.</td><td><strong>Conclusion</strong></td> <td>Experiment completed successfully.</td> </tr> </tbody> </table>"
-        echo "email content- $conclusion"
-        echo "value=$conclusion">>"$GITHUB_OUTPUT"
+         if [[ "${{ steps.experiment_state.outcome }}" == "success" ]]; then
+            exp_conclusion="Experiment completed successfully."
+         else
+            exp_conclusion="Experiment execution failed."
+         fi;
+
+          conclusion="<p>System failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details</p> <table> <tbody> <tr> <td>1.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>2.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>3.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ env.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ env.experiment_id }}</td> </tr> <tr> <td>5.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>6.&nbsp;</td> <td><strong>AWS resources state impacted</strong></td> <td> <p>ASG name- ${{ env. ASG_NAME }}&nbsp;</p> <p>ASG desired capacity before run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ASG capacity after run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p> </td> </tr> <tr> <td>7.</td> <td><strong>Current state of experiment</strong></td> <td>Completed- Exited</td> </tr> <tr> <td>8.</td><td><strong>Conclusion</strong></td> <td>$exp_conclusion</td> </tr> </tbody> </table>"
+          echo "email content- $conclusion"
+          echo "value=$conclusion">>"$GITHUB_OUTPUT"
 
