@@ -71,7 +71,7 @@ jobs:
               to: ${{ env.RECEIVER_EMAIL_ID }}
               username:  ${{env.SENDER_EMAIL_ID}}
               password: ${{ secrets.SMTP_PASSWORD }}
-              subject: 'Region failover completed'                 
+              subject: 'Failure simulation completed for repository-${{ github.repository }} '                 
               html_body: |
                 ${{ steps.notification-email-content.outputs.content}}
        
