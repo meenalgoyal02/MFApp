@@ -94,7 +94,7 @@ jobs:
       continue-on-error: true
       id: conclusion
       run: |
-         if [[ "${{ steps.experiment_state.outcome }}" == "success" ]]; then
+         if [[ "${{ steps.experiment-state.outcome }}" == "success" ]]; then
             exp_conclusion="Experiment completed successfully."
          else
             exp_conclusion="Experiment execution failed."
