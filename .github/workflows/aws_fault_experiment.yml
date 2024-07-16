@@ -32,20 +32,27 @@ jobs:
         aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Start FIS experiment
-      id: start_experiment
+    - name: Check current ASG desired capacity
+      id: asg-desired-capacity-before-experiment-run
       run: |
-        experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
-        echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
-        echo "Experiment started with ID: $experiment_id"
+        value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+        echo "$value"
 
-    - name: Monitor FIS experiment
-      run: |
-        state="running"
 
-        while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
-          state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
-          echo "Current state: $state"
-          sleep 120
-        done
-        echo "Experiment completed with state: $state"
+    # - name: Start FIS experiment
+    #   id: start_experiment
+    #   run: |
+    #     experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
+    #     echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
+    #     echo "Experiment started with ID: $experiment_id"
+
+    # - name: Monitor FIS experiment
+    #   run: |
+    #     state="running"
+
+    #     while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
+    #       state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
+    #       echo "Current state: $state"
+    #       sleep 120
+    #     done
+    #     echo "Experiment completed with state: $state"
