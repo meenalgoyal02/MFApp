@@ -8,9 +8,15 @@ on:
             
       AWS_SECRET_ACCESS_KEY:
                 required: true
+    outputs:
+      conclusion:
+        description: conclusion of the activity executed
+        value: ${{ jobs.run-fis-experiment.outputs.conclusion }}
       
 jobs:
   run-fis-experiment:
+    outputs: 
+      conclusion: ${{ steps.conclusion.outputs.value }}
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -19,6 +25,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    
+    - name: start date and time
+      id: start-date
+      run: |
+         currentDate=$(echo $(date))
+         echo "Current date-${currentDate}"
+         echo "value=$currentDate">>"$GITHUB_OUTPUT"
 
     - name: Set Environment Variables from File
       uses: ./.github/actions/setup-environment
@@ -37,22 +50,46 @@ jobs:
       run: |
         value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
         echo "$value"
+        echo "value=$value">>"$GITHUB_OUTPUT"
 
+    - name: Start FIS experiment
+      id: start_experiment
+      run: |
+        experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
+        echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
+        echo "Experiment started with ID: $experiment_id"
 
-    # - name: Start FIS experiment
-    #   id: start_experiment
-    #   run: |
-    #     experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
-    #     echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
-    #     echo "Experiment started with ID: $experiment_id"
+    - name: Monitor FIS experiment
+      id: experiment-state
+      run: |
+        state="running"
 
-    # - name: Monitor FIS experiment
-    #   run: |
-    #     state="running"
+        while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
+          state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
+          echo "Current state: $state"
+          sleep 120
+        done
+        echo "Experiment completed with state: $state"
+        echo "value=$state">>"$GITHUB_OUTPUT"
 
-    #     while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
-    #       state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
-    #       echo "Current state: $state"
-    #       sleep 120
-    #     done
-    #     echo "Experiment completed with state: $state"
+    - name: Check current ASG desired capacity
+      id: asg-desired-capacity-after-experiment-run
+      run: |
+        value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+        echo "$value"
+        echo "value=$value">>"$GITHUB_OUTPUT"
+
+    - name: start date and time
+      id: end-date
+      run: |
+          currentDate=$(echo $(date))
+          echo "Current date-${currentDate}"
+          echo "value=$currentDate">>"$GITHUB_OUTPUT"
+
+    - name: Experinment report
+      id: conclusion
+      run: |
+        value="<p style="margin-left:320px;">System failure experiment completed</p> <p style="margin-left:280px;">&nbsp; &nbsp; &nbsp;Details</p> <figure class="table"> <table> <tbody> <tr> <td>1.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>2.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>3.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ steps.start_experiment.outputs.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ steps.start_experiment.outputs.experiment_id }}</td> </tr> <tr> <td>5.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>6.&nbsp;</td> <td><strong>AWS resources state impacted</strong></td> <td> <p>ASG name- ${{ env. ASG_NAME }}&nbsp;</p> <p>ASG desired capacity before run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ASG capacity after run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p> </td> </tr> <tr> <td>7.</td> <td><strong>Current state of experiment</strong></td> <td>Completed- Exited</td> </tr> <tr> <td>8.</td> <td><strong>Conclusion</strong></td> <td>Experiment completed successfully.</td> </tr> </tbody> </table> </figure>"
+        echo "email content- $value"
+        echo "value=$value">>"$GITHUB_OUTPUT"
+

@@ -127,11 +127,11 @@ jobs:
             if [ "$HTTP_STATUS" -eq 503 ]; then
               echo "Region down completed."
               echo "::set-output name=Region-down::true"
-              echo "::set-output name=Email-subject:: Primary region is down for Repository- ${{ github.repository }}"
+              echo "::set-output name=Email-subject:: AWS region is down for Repository- ${{ github.repository }}"
             else
               echo "Region down could not be completed."
               echo "::set-output name=Region-down::false"
-              echo "::set-output name=Email-subject:: Failed in setting Primary region down. "
+              echo "::set-output name=Email-subject:: Failed in setting AWS region down. "
             fi
         
         - name: end date and time
@@ -149,42 +149,14 @@ jobs:
             outcomeOfASGUpdate="${{ steps.disaster-simulation-ASG.outcome }}"
 
             if [[ "$outcomeOfHostUpdate" == "failure" || "$outcomeOfASGUpdate" == "failure" ]]; then
-              value="<h3>Disaster simulation failed.</h3>"
+              value="<h3>Region failure simulation failed.</h3>"
             else
-              value="<h3>Disaster simulation completed successfully.</h3>"
+              value="<h3>Region failure simulation completed successfully.</h3>"
             fi
            
-            value+="<h4>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</h4><figure class="table"> <table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>Disaster simulation</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_PRIMARY_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> <ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol> </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr> </tbody> </table> </figure>"
+            value+="<h4>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</h4><figure class="table"> <table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>AWS Region failure simulation</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_PRIMARY_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> <ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol> </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr></tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr> </tbody> </table> </figure>"
             
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"
 
-        # - name: Send notification email          
-        #   uses: dawidd6/action-send-mail@v3
-        #   with:
-        #       server_address: smtp.gmail.com
-        #       server_port: 465
-        #       secure: true
-        #       from:  ${{ env.SENDER_EMAIL_ID }}
-        #       to: ${{ env.RECEIVER_EMAIL_ID }}
-        #       username:  ${{env.SENDER_EMAIL_ID}}
-        #       password: ${{ secrets.SMTP_PASSWORD }}
-        #       subject: ${{ steps.verify-region-is-down.outputs.Email-subject }}                  
-        #       body:  |
-        #         <h2><strong>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</strong></h2>
-        #         <ol>
-        #             <li>Activity Name: Disaster simulation</li>
-        #             <li>AWS Region: ${{ env.AWS_PRIMARY_REGION }} </li>
-        #             <li>Impacted resources-<ol>
-        #                     <li>ASG: ${{ env.ASG_NAME }}</li>
-        #                     <li>Hosted-zone:${{ env.CNAME }}</li>
-        #                 </ol>
-        #             </li>
-        #             <li>Activity Start Time:${{ steps.start-date.outputs.value }}</li>
-        #             <li>Activity End Time:${{ steps.end-date.outputs.value }}<br>&nbsp;</li>
-        #         </ol>
-              
-                  
-
-        
-       
+      

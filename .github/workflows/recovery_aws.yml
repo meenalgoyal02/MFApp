@@ -127,11 +127,11 @@ jobs:
                 if [ "$HTTP_STATUS" -eq 200 ]; then
                   echo "Region up completed."
                   echo "::set-output name=Region-up::true"
-                  echo "::set-output name=Email-subject:: Secondary region is up for Repository- ${{ github.repository }}"
+                  echo "::set-output name=Email-subject:: AWS region is up for Repository- ${{ github.repository }}"
                 else
                   echo "Region up could not be completed."
                   echo "::set-output name=Region-up::false"
-                  echo "::set-output name=Email-subject:: Failed in setting Secondary region up. "
+                  echo "::set-output name=Email-subject:: Failed in setting AWS region up. "
                 fi
         - name: end date and time
           continue-on-error: true
@@ -150,12 +150,12 @@ jobs:
             outcomeOfASGUpdate="${{ steps.recover-asg.outcome }}"
 
             if [[ "$outcomeOfHostUpdate" == "failure" || "$outcomeOfASGUpdate" == "failure" ]]; then
-              value="<h3>Disaster recovery failed.</h3>"
+              value="<h3>Failure recovery failed.</h3>"
             else
-              value="<h3>Disaster recovery completed.</h3>"
+              value="<h3>Failure recovery completed.</h3>"
             fi
             
-            value+="<h4>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</h4><table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>Disaster simulation</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> <ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol> </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr> </tbody> </table> </figure>"
+            value+="<h4>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</h4><table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>Failure Recovery</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> <ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol> </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr>  </tbody> </table> </figure>"
             
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"
