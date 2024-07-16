@@ -95,7 +95,7 @@ jobs:
                 echo "::set-output name=change_id::$CHANGE_ID"
 
         - name: Wait for Route53 Change to Become INSYNC
-          continue-on-error: true
+          if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
           id: wait-for-insync-primary
           run: |
                    CHANGE_ID=${{ steps.disaster-in-primary-region.outputs.change_id }}
