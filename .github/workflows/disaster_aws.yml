@@ -136,6 +136,7 @@ jobs:
               echo "Current date-${currentDate}"
               echo "value=$currentDate">>"$GITHUB_OUTPUT"
         - name: action run summary
+          continue-on-error: true
           id: conclusion
           run: |
 
