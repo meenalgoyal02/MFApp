@@ -74,8 +74,7 @@ runs:
               echo "DNS name by ALB name:-$dns_name"
           fi;
           echo "resource-id=$dns_name">> "$GITHUB_OUTPUT" 
-        elif[ "$resourceType" == 'ecs-cluster' ]; then
-         
+        elif [ "$resourceType" == 'ecs-cluster' ]; then         
             ecs_clusters=$(aws ecs list-clusters)
 
             for cluster in $ecs_clusters; do
@@ -91,7 +90,7 @@ runs:
 
             done
          
-        elif[ "$resourceType" == 'ecs-service' ]; then 
+        elif [ "$resourceType" == 'ecs-service' ]; then 
           if [-z "$resourceName"]; then
               ecs_services=$(aws ecs list-services --cluster $resourceName --query serviceArns[*] --output text)
 
