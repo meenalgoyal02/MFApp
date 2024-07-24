@@ -78,6 +78,7 @@ runs:
             ecs_clusters=$(aws ecs list-clusters --region ${{ inputs.aws-region }} --query clusterArns[*] --output text)
 
             for cluster in $ecs_clusters; do
+              echo "Cluster arn:$cluster"
               tag=$(aws ecs describe-clusters --clusters cluster --include TAGS --query clusters[*].tags[?key==\`${tagKey}\`] --output text --region ${{ inputs.aws-region }})
                echo "Output tag value-${tag}"
                                
