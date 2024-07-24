@@ -75,10 +75,10 @@ runs:
           fi;
           echo "resource-id=$dns_name">> "$GITHUB_OUTPUT" 
         elif [ "$resourceType" == 'ecs-cluster' ]; then         
-            ecs_clusters=$(aws ecs list-clusters)
+            ecs_clusters=$(aws ecs list-clusters --region ${{ inputs.aws-region }})
 
             for cluster in $ecs_clusters; do
-              tag=$(aws ecs describe-clusters --clusters cluster --include TAGS --query clusters[*].tags[?key==\`${tagKey}\`] --output text)
+              tag=$(aws ecs describe-clusters --clusters cluster --include TAGS --query clusters[*].tags[?key==\`${tagKey}\`] --output text --region ${{ inputs.aws-region }})
                echo "Output tag value-${tag}"
                                
               if [[ "$tag" == *${tagValue}* ]]; then
@@ -92,10 +92,10 @@ runs:
          
         elif [ "$resourceType" == 'ecs-service' ]; then 
           if [-z "$resourceName"]; then
-              ecs_services=$(aws ecs list-services --cluster $resourceName --query serviceArns[*] --output text)
+              ecs_services=$(aws ecs list-services --cluster $resourceName --query serviceArns[*] --output text --region ${{ inputs.aws-region }})
 
               for service in $ecs_services; do
-                tag=$(aws ecs describe-services --services $service --cluster $resourceName --include TAGS --query services[*].tags[?key==\`${tagKey}\`] --output text)
+                tag=$(aws ecs describe-services --services $service --cluster $resourceName --include TAGS --query services[*].tags[?key==\`${tagKey}\`] --output text --region ${{ inputs.aws-region }})
 
                 echo "Output tag value-${tag}"
                                 
