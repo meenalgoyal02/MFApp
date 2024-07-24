@@ -12,19 +12,19 @@ inputs:
       description: 'AWS Region'
       required: true
   resource-type:
-        description: 'The type of resource for whome id is required.Possible values are: ALB'
+        description: 'The type of resource for whome id is required.Possible values are: ALB/ecs-cluster/ecs-service/hosted-zone '
         required: false
         default: 'ALB'
   resource-name:
-        description: 'Resource name for which id is needed'
+        description: 'Resource name for which id is needed. In case of ecs-service, this must be cluster-arn.'
         required: true
         default: ''
   resource-tag-name:
-        description: 'Resource tag name'
+        description: 'Resource tag name. In case of ecs cluster/service, it is mandatory'
         required: false
         default: ''
   resource-tag-value:
-        description: 'Resource tag value'
+        description: 'Resource tag value. In case of ecs cluster/service, it is mandatory'
         required: false
         default: ''
 outputs:
@@ -40,6 +40,7 @@ runs:
         tagKey=${{ inputs.resource-tag-name }}
         tagValue=${{ inputs.resource-tag-value }}
         resourceName=${{ inputs.resource-name }}
+        resourceType=${{ inputs.resource-type }}
 
         if [ "${{ inputs.resource-type }}" == 'ALB' ]; then
           if [ -z "${{ inputs.resource-name }}" ]; then
@@ -73,6 +74,40 @@ runs:
               echo "DNS name by ALB name:-$dns_name"
           fi;
           echo "resource-id=$dns_name">> "$GITHUB_OUTPUT" 
+        elif[ "$resourceType" == "ecs-cluster" ]; then
+         
+            ecs_clusters=$(aws ecs list-clusters)
+
+            for cluster in $ecs_clusters; do
+              tag=$(aws ecs describe-clusters --clusters cluster --include TAGS --query clusters[*].tags[?key==\`${tagKey}\`] --output text)
+               echo "Output tag value-${tag}"
+                               
+              if [[ "$tag" == *${tagValue}* ]]; then
+                cluster_arn=$cluster
+                echo "Cluster-arn:$cluster_arn"
+                echo "resource-id=$cluster_arn">> "$GITHUB_OUTPUT" 
+                break;
+              fi 
+
+            done
+         
+        elif[ "$resourceType" == "ecs-service" ]; then 
+          if [-z "$resourceName"]; then
+              ecs_services=$(aws ecs list-services --cluster $resourceName --query serviceArns[*] --output text)
+
+              for service in $ecs_services; do
+                tag=$(aws ecs describe-services --services $service --cluster $resourceName --include TAGS --query services[*].tags[?key==\`${tagKey}\`] --output text)
+
+                echo "Output tag value-${tag}"
+                                
+                if [[ "$tag" == *${tagValue}* ]]; then
+                  service_arn=$service
+                  echo "Service-arn:$service_arn"
+                  echo "resource-id=$service_arn">> "$GITHUB_OUTPUT" 
+                  break;
+                fi 
+              done
+          fi;
         else
           if [ -z "${{ inputs.resource-name }}" ]; then
             # Retrieve by tag
