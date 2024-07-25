@@ -94,7 +94,6 @@ jobs:
 
         - name: Set desired capacity in the region
           id: recover-asg  
-          if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
           continue-on-error: true     
           run: |
             input_resource=${{ inputs.resource_type }}

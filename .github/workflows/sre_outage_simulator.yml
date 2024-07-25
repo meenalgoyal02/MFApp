@@ -63,7 +63,7 @@ jobs:
         id: notification-email-content        
         run: |
           content="<html><body>"
-          if [[ "${{ github.event.inputs.outage-type }}" == "region-failover" ]]; then             
+          if [[ "${{ github.event.inputs.outage-type }}" == "region-failure" ]]; then             
             content+="${{ needs.run-region-failover.outputs.conclusion }}"
             content+="<br/>"
             content+="${{ needs.run-recovery-scripts.outputs.conclusion }}"
