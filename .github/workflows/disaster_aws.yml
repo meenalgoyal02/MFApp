@@ -65,7 +65,7 @@ jobs:
             aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
             aws-region: ${{ env.AWS_PRIMARY_REGION }}              
             resource-type: 'ALB'               
-            resource-name: ${{ env.ASG_NAME }}               
+            resource-name: ''               
             resource-tag-name: ${{ env.ALB_TAG_KEY }}              
             resource-tag-value: ${{ env.ALB_TAG_VALUE }}   
                     
@@ -79,8 +79,8 @@ jobs:
             aws-region: ${{ env.AWS_PRIMARY_REGION }}              
             resource-type: 'hosted-zone'               
             resource-name: ${{ env.HOSTED-ZONE-NAME }}               
-            resource-tag-name: ${{ env.ALB_TAG_KEY }}              
-            resource-tag-value: ${{ env.ALB_TAG_VALUE }}
+            resource-tag-name: ''              
+            resource-tag-value: ''
 
         - name: Set primary region CNAME weight to 0
           continue-on-error: true
