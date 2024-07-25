@@ -60,10 +60,11 @@ jobs:
       && !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     steps:
-      - name: send notification email
+      - name: Prepare email content
         continue-on-error: true
         id: notification-email-content        
         run: |
+          echo "Email content- ${{ needs.run-experiment.outputs.conclusion }}"
           content="<html><body>"
           if [[ "${{ github.event.inputs.outage-type }}" == "region-failure" ]]; then             
             content+="${{ needs.run-region-failover.outputs.conclusion }}"
