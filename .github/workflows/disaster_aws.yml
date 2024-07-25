@@ -202,8 +202,9 @@ jobs:
               value="<h3>Region failure simulation completed successfully.</h3>"
             else
               value="<h3>Region failure simulation failed.</h3>"
-            fi
-
+            fi;
+            
+            input_resource=${{ inputs.resource_type }}
             if [[ "$input_resource" == "ec2" ]]; then
               impactedResources="<ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
             else

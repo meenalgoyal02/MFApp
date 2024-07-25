@@ -2,6 +2,12 @@ name: Run AWS FIS Experiment
 
 on:
   workflow_call:
+    inputs:
+      resource_type:
+        description: 'The type of resource to bring down'
+        default: 'ec2'
+        required: true
+        type: string
     secrets:    
       AWS_ACCESS_KEY_ID:
             required: true
@@ -33,10 +39,18 @@ jobs:
          echo "Current date-${currentDate}"
          echo "value=$currentDate">>"$GITHUB_OUTPUT"
 
+          
     - name: Set Environment Variables from File
+      if: ${{ inputs.resource_type == 'ec2'}}
       uses: ./.github/actions/setup-environment
       with:
-          var_file_path: ./.github/variables/fis_aws.env      
+          var_file_path: ./.github/variables/fis_aws.env
+        
+    - name: Set Environment Variables from File
+      if: ${{ inputs.resource_type == 'ecs'}}
+      uses: ./.github/actions/setup-environment
+      with:
+          var_file_path: ./.github/variables/fis_ecs.env          
 
     - name: Set up AWS CLI
       uses: aws-actions/configure-aws-credentials@v1
@@ -45,16 +59,55 @@ jobs:
         aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Check current ASG desired capacity
+    - name: Retrieve ecs cluster arn
       continue-on-error: true
-      id: asg-desired-capacity-before-experiment-run
+      id: get-ecs-cluster-by-tag-name
+      if: ${{ inputs.resource_type == 'ecs' }}
+      uses: ./.github/actions/get_resource_by_id
+      with:
+        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+        aws-region: ${{ env.AWS_REGION }}              
+        resource-type: 'ecs-cluster'               
+        resource-name: ''              
+        resource-tag-name: ${{ env.TAG_KEY }}              
+        resource-tag-value: ${{ env.TAG_VALUE }}
+  
+    - name: Retrieve ecs service arn
+      continue-on-error: true
+      id: get-ecs-service-id
+      if: ${{ inputs.resource_type == 'ecs' && steps.get-ecs-cluster-by-tag-name.outputs.resource-id !='' }}
+      uses: ./.github/actions/get_resource_by_id
+      with:
+        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+        aws-region: ${{ env.AWS_REGION }}              
+        resource-type: 'ecs-service'               
+        resource-name: ${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}              
+        resource-tag-name: ${{ env.TAG_KEY }}              
+        resource-tag-value: ${{ env.TAG_VALUE }}
+
+
+    - name: Check current instance desired capacity
+      id: asg-desired-capacity-before-experiment-run  
+      continue-on-error: true     
       run: |
-        value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+        input_resource=${{ inputs.resource_type }}
+        if [[ "$input_resource" == "ec2" ]]; then
+            value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+           
+        else
+            clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
+            serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
+            echo "ECS service id-$serviceId"           
+            value=$(aws ecs describe-services --cluster $clusterId --service $serviceId --region $AWS_REGION --query services[*].deployments[*].desiredCount --output text)            
+        fi;
         echo "$value"
         echo "value=$value">>"$GITHUB_OUTPUT"
-
+    
     - name: Start FIS experiment
       continue-on-error: true
+      if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
       id: start_experiment
       run: |
         experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
@@ -63,6 +116,7 @@ jobs:
 
     - name: Monitor FIS experiment
       continue-on-error: true
+      if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
       id: experiment-state
       run: |
         state="running"
@@ -75,11 +129,20 @@ jobs:
         echo "Experiment completed with state: $state"
         echo "value=$state">>"$GITHUB_OUTPUT"
 
-    - name: Check current ASG desired capacity
-      continue-on-error: true
-      id: asg-desired-capacity-after-experiment-run
+    - name: Check current instance desired capacity
+      id: asg-desired-capacity-after-experiment-run  
+      continue-on-error: true     
       run: |
-        value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+        input_resource=${{ inputs.resource_type }}
+        if [[ "$input_resource" == "ec2" ]]; then
+            value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+            
+        else
+            clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
+            serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
+            echo "ECS service id-$serviceId"           
+            value=$(aws ecs describe-services --cluster $clusterId --service $serviceId --region $AWS_REGION --query services[*].deployments[*].desiredCount --output text)            
+        fi;
         echo "$value"
         echo "value=$value">>"$GITHUB_OUTPUT"
 
@@ -100,7 +163,16 @@ jobs:
             exp_conclusion="Experiment execution failed."
          fi;
 
-          conclusion="<p>System failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details</p> <table> <tbody> <tr> <td>1.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>2.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>3.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ env.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ env.experiment_id }}</td> </tr> <tr> <td>5.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>6.&nbsp;</td> <td><strong>AWS resources state impacted</strong></td> <td> <p>ASG name- ${{ env. ASG_NAME }}&nbsp;</p> <p>ASG desired capacity before run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ASG capacity after run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p> </td> </tr> <tr> <td>7.</td> <td><strong>Current state of experiment</strong></td> <td>Completed- Exited</td> </tr> <tr> <td>8.</td><td><strong>Conclusion</strong></td> <td>$exp_conclusion</td> </tr> </tbody> </table>"
+         input_resource=${{ inputs.resource_type }}
+            if [[ "$input_resource" == "ec2" ]]; then
+              impactedResources=" <p>ASG name- ${{ env. ASG_NAME }}&nbsp;</p> <p>ASG desired capacity before run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ASG capacity after run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p>"
+            else
+              impactedResources=" <p>ECS Service: ${{ steps.get-ecs-service-id.outputs.resource-id }}&nbsp;</p> <p>ECS desired capacity before EXPERIMENT run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ECS capacity after EXPERIMENT run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p>"
+            fi;
+        
+
+
+          conclusion="<p>System failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details</p> <table> <tbody> <tr> <td>1.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>2.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>3.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ env.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ env.experiment_id }}</td> </tr> <tr> <td>5.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>6.&nbsp;</td> <td><strong>AWS resources state impacted</strong></td> <td> ${impactedResources} </td> </tr> <tr> <td>7.</td> <td><strong>Current state of experiment</strong></td> <td>Completed- Exited</td> </tr> <tr> <td>8.</td><td><strong>Conclusion</strong></td> <td>$exp_conclusion</td> </tr> </tbody> </table>"
           echo "email content- $conclusion"
           echo "value=$conclusion">>"$GITHUB_OUTPUT"
 
