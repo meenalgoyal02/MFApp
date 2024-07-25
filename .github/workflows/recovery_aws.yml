@@ -1,6 +1,12 @@
 name: Recovery steps in Secondary region.
 on: 
   workflow_call:
+    inputs:
+      resource_type:
+        description: 'The type of resource to bring down'
+        default: 'ec2'
+        required: true
+        type: string
     secrets:    
       AWS_ACCESS_KEY_ID:
             required: true
@@ -30,13 +36,21 @@ jobs:
         - uses: actions/checkout@v2
 
         - name: Set Environment Variables from File
+          if: ${{ inputs.resource_type == 'ec2'}}
           uses: ./.github/actions/setup-environment
           with:
-            var_file_path: ./.github/variables/recovery_aws.env
+              var_file_path: ./.github/variables/recovery_aws.env
+      
+        - name: Set Environment Variables from File
+          if: ${{ inputs.resource_type == 'ecs'}}
+          uses: ./.github/actions/setup-environment
+          with:
+              var_file_path: ./.github/variables/recovery_ecs.env
 
         - uses: actions/setup-python@v2
           with:
             python-version: '3.10'
+
         - name: Install dependencies
           run: |
             python -m pip install --upgrade pip
@@ -49,15 +63,54 @@ jobs:
               echo "Current date-${currentDate}"
               echo "value=$currentDate">>"$GITHUB_OUTPUT"
 
-        - name: recover-asg
-          id: recover-asg
+        - name: Retrieve ecs cluster arn
           continue-on-error: true
+          id: get-ecs-cluster-by-tag-name
+          if: ${{ inputs.resource_type == 'ecs' }}
+          uses: ./.github/actions/get_resource_by_id
+          with:
+            aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+            aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+            aws-region: ${{ env.AWS_REGION }}              
+            resource-type: 'ecs-cluster'               
+            resource-name: ''              
+            resource-tag-name: ${{ env.TAG_KEY }}              
+            resource-tag-value: ${{ env.TAG_VALUE }}
+    
+        - name: Retrieve ecs service arn
+          continue-on-error: true
+          id: get-ecs-service-id
+          if: ${{ inputs.resource_type == 'ecs' && steps.get-ecs-cluster-by-tag-name.outputs.resource-id !='' }}
+          uses: ./.github/actions/get_resource_by_id
+          with:
+            aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+            aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+            aws-region: ${{ env.AWS_REGION }}              
+            resource-type: 'ecs-service'               
+            resource-name: ${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}              
+            resource-tag-name: ${{ env.TAG_KEY }}              
+            resource-tag-value: ${{ env.TAG_VALUE }}
+
+
+        - name: Set desired capacity in the region
+          id: recover-asg  
+          if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
+          continue-on-error: true     
           run: |
-           aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 2 --min-size 0 --max-size 3 --region $AWS_REGION
-      
+            input_resource=${{ inputs.resource_type }}
+            if [[ "$input_resource" == "ec2" ]]; then
+            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 2 --min-size 0 --max-size 3 --region $AWS_REGION
+            else
+                clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
+                serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
+                echo "ECS service id-$serviceId"
+                aws ecs update-service --cluster $clusterId --service $serviceId --desired-count 1 --region $AWS_REGION
+            fi
+
         - name: Retrieve id of hosted-zone
           continue-on-error: true
           id: get-hosted-zone-id 
+          if: ${{ steps.recover-asg.outcome == 'success' }}
           uses: ./.github/actions/get_resource_by_id
           with:
             aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
@@ -71,6 +124,7 @@ jobs:
 
         - name: Retrieve DNS name of load balancer for secondary region
           continue-on-error: true
+          if: ${{ steps.recover-asg.outcome == 'success' }}
           id: secondary-alb-dns-name 
           uses: ./.github/actions/get_resource_by_id
           with:
@@ -155,23 +209,13 @@ jobs:
               value="<h3>Failure recovery completed.</h3>"
             fi
             
-            value+="<h4>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</h4><table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>Failure Recovery</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> <ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol> </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr>  </tbody> </table> </figure>"
+            if [[ "$input_resource" == "ec2" ]]; then
+              impactedResources="<ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
+            else
+              impactedResources="<ol> <li>ECS Service: ${{ steps.get-ecs-service-id.outputs.resource-id }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
+            fi;
+
+            value+="<h4>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</h4><table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>Failure Recovery</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> $impactedResources </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr>  </tbody> </table> </figure>"
             
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"
-      
-    
-        # - name: Send notification email          
-        #   uses: dawidd6/action-send-mail@v3
-        #   with:
-        #           server_address: smtp.gmail.com
-        #           server_port: 465
-        #           secure: true
-        #           from:  ${{ env.SENDER_EMAIL_ID }}
-        #           to: ${{ env.RECEIVER_EMAIL_ID }}
-        #           username:  ${{env.SENDER_EMAIL_ID}}
-        #           password: ${{ secrets.SMTP_PASSWORD }}
-        #           subject: ${{ steps.verify-region-is-down.outputs.Email-subject }}                  
-        #           body:  |
-        #               Gameday Preparation completed with the run of GitHub workflow. Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        #               Please check the application and take recovery steps, as required.              

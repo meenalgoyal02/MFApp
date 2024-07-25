@@ -5,10 +5,10 @@ on:
         outage-type:
           description: 'Select the failover type to run'
           required: true
-          default: 'region-failover'
+          default: 'region-failure'
           type: choice
           options:
-            - region-failover
+            - region-failure
             - system-failover
         deployment-type:
             description: 'Select the deployment type for the action'
@@ -24,7 +24,7 @@ env:
 
 jobs:
   run-region-failover:
-    if: ${{github.event.inputs.outage-type=='region-failover'}}
+    if: ${{github.event.inputs.outage-type=='region-failure'}}
     uses: ./.github/workflows/disaster_aws.yml
     with: 
       resource_type: ${{ github.event.inputs.deployment-type }}
@@ -33,57 +33,57 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}  
 
-  # run-recovery-scripts:
-  #    needs: run-region-failover
-  #    uses: ./.github/workflows/recovery_aws.yml
-  #    secrets:
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}          
+  run-recovery-scripts:
+     needs: run-region-failover
+     uses: ./.github/workflows/recovery_aws.yml
+     secrets:
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}          
  
-  # run-experiment:
-  #   if: ${{github.event.inputs.outage-type=='system-failover'}}
-  #   uses: ./.github/workflows/aws_fault_experiment.yml
-  #   secrets:
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}   
+  run-experiment:
+    if: ${{github.event.inputs.outage-type=='system-failover'}}
+    uses: ./.github/workflows/aws_fault_experiment.yml
+    secrets:
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}   
 
-  # send-disaster-simulation-notification:
-  #   needs: [run-region-failover, run-recovery-scripts, run-experiment]
-  #   if: |
-  #     always()
-  #     && contains(needs.*.result, 'success')
-  #     && !contains(needs.*.result, 'failure')
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: send notification email
-  #       continue-on-error: true
-  #       id: notification-email-content        
-  #       run: |
-  #         content="<html><body>"
-  #         if [[ "${{ github.event.inputs.outage-type }}" == "region-failover" ]]; then             
-  #           content+="${{ needs.run-region-failover.outputs.conclusion }}"
-  #           content+="<br/>"
-  #           content+="${{ needs.run-recovery-scripts.outputs.conclusion }}"
-  #         else 
-  #           content+="${{ needs.run-experiment.outputs.conclusion }}"
-  #         fi;
-  #         content+="<br><p>Click <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">here </a>to view the workflow logs.&nbsp;</p></body><html>"
-  #         echo "Email content:${content}"
-  #         echo "content=$content">>"$GITHUB_OUTPUT"
+  send-disaster-simulation-notification:
+    needs: [run-region-failover, run-recovery-scripts, run-experiment]
+    if: |
+      always()
+      && contains(needs.*.result, 'success')
+      && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: send notification email
+        continue-on-error: true
+        id: notification-email-content        
+        run: |
+          content="<html><body>"
+          if [[ "${{ github.event.inputs.outage-type }}" == "region-failover" ]]; then             
+            content+="${{ needs.run-region-failover.outputs.conclusion }}"
+            content+="<br/>"
+            content+="${{ needs.run-recovery-scripts.outputs.conclusion }}"
+          else 
+            content+="${{ needs.run-experiment.outputs.conclusion }}"
+          fi;
+          content+="<br><p>Click <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">here </a>to view the workflow logs.&nbsp;</p></body><html>"
+          echo "Email content:${content}"
+          echo "content=$content">>"$GITHUB_OUTPUT"
 
-  #     - name: Send notification email   
-  #       continue-on-error: true       
-  #       uses: dawidd6/action-send-mail@v3
-  #       with:
-  #             server_address: smtp.gmail.com
-  #             server_port: 465
-  #             secure: true
-  #             from:  ${{ env.SENDER_EMAIL_ID }}
-  #             to: ${{ env.RECEIVER_EMAIL_ID }}
-  #             username:  ${{env.SENDER_EMAIL_ID}}
-  #             password: ${{ secrets.SMTP_PASSWORD }}
-  #             subject: 'Failure simulation completed for repository-${{ github.repository }} '                 
-  #             html_body: |
-  #               ${{ steps.notification-email-content.outputs.content}}
+      - name: Send notification email   
+        continue-on-error: true       
+        uses: dawidd6/action-send-mail@v3
+        with:
+              server_address: smtp.gmail.com
+              server_port: 465
+              secure: true
+              from:  ${{ env.SENDER_EMAIL_ID }}
+              to: ${{ env.RECEIVER_EMAIL_ID }}
+              username:  ${{env.SENDER_EMAIL_ID}}
+              password: ${{ secrets.SMTP_PASSWORD }}
+              subject: 'Failure simulation completed for repository-${{ github.repository }} '                 
+              html_body: |
+                ${{ steps.notification-email-content.outputs.content}}
        
