@@ -134,8 +134,8 @@ jobs:
           id: get-ecs-service-id
           if: ${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id !='' }}
           run: |
-                ecs-cluster-arn=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
-                echo "ECS cluster arn-$ecs-cluster-arn"
+                ecsCluster=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
+                echo "ECS cluster arn-$ecsCluster"
 
         # - name: Set ASG capacity in primary region
         #   id: disaster-simulation-ASG  
