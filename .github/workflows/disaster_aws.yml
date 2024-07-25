@@ -88,11 +88,12 @@ jobs:
           if: ${{ steps.primary-alb-dns-name.outputs.resource-id !='' }}
           run: |
                hosted_zone_id=${{ steps.get-hosted-zone-id-by-name.outputs.resource-id }}
-               echo "Hosted-zone id-$hosted_zone_id"
-               echo "DNS name of ALB-${{ steps.primary-alb-dns-name.outputs.resource-id }}"
+               alb_id=${{ steps.primary-alb-dns-name.outputs.resource-id }}
+               echo "Hosted-zone id-$hosted_zone_id, ALB id-$alb_id"
+               #echo "DNS name of ALB-${{ steps.primary-alb-dns-name.outputs.resource-id }}"
                
                CHANGE_OUTPUT=$(aws route53 change-resource-record-sets --hosted-zone-id ${hosted_zone_id} --change-batch "{ \"Comment\": \"Changes weights of ACTIVE region from 100 to 0\",\"Changes\": [{ \"Action\": \"UPSERT\",
-               \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.PRIMARY_CNAME_IDENTIFIER }}\",\"Weight\": 0,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${{ steps.primary-alb-dns-name.outputs.resource-id }} \"}]  }}]}")
+               \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.PRIMARY_CNAME_IDENTIFIER }}\",\"Weight\": 0,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${alb_id} \"}]  }}]}")
                
                 echo "Change Output: $CHANGE_OUTPUT"
                 CHANGE_ID=$(echo $CHANGE_OUTPUT | jq -r '.ChangeInfo.Id')
@@ -119,6 +120,7 @@ jobs:
         - name: Retrieve ecs cluster arn
           continue-on-error: true
           id: get-ecs-cluster-by-tag-name
+          if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
           uses: ./.github/actions/get_resource_by_id
           with:
             aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
@@ -146,6 +148,7 @@ jobs:
 
         - name: Set ASG capacity in primary region
           id: disaster-simulation-ASG  
+          if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
           continue-on-error: true     
           run: |
             input_resource=${{ inputs.resource_type }}
@@ -188,13 +191,19 @@ jobs:
             outcomeOfHostUpdate="${{ steps.disaster-in-primary-region.outcome }}"
             outcomeOfASGUpdate="${{ steps.disaster-simulation-ASG.outcome }}"
 
-            if [[ "$outcomeOfHostUpdate" == "failure" || "$outcomeOfASGUpdate" == "failure" ]]; then
-              value="<h3>Region failure simulation failed.</h3>"
-            else
+            if [[ "$outcomeOfHostUpdate" == "success" || "$outcomeOfASGUpdate" == "success" ]]; then
               value="<h3>Region failure simulation completed successfully.</h3>"
+            else
+              value="<h3>Region failure simulation failed.</h3>"
             fi
+
+            if [[ "$input_resource" == "ec2" ]]; then
+              impactedResources="<ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
+            else
+              impactedResources="<ol> <li>ECS Service: ${{ steps.get-ecs-service-id.outputs.resource-id }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
+            fi;
            
-            value+="<h4>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</h4><figure class="table"> <table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>AWS Region failure simulation</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_PRIMARY_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> <ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol> </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr></tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr> </tbody> </table> </figure>"
+            value+="<h4>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</h4><figure class="table"> <table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>AWS Region failure simulation</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_PRIMARY_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> ${impactedResources} </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr></tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr> </tbody> </table> </figure>"
             
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"
