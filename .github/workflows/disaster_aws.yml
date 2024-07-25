@@ -152,8 +152,8 @@ jobs:
             if [[ "$input_resource" == "ec2" ]]; then
                aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 0 --min-size 0 --max-size 0 --region $AWS_PRIMARY_REGION
             else
-                serviceId="${{ steps.get-ecs-service-id.outputs.resource-id }}" 
-                echo "ECS service id-"$serviceId"
+                serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
+                echo "ECS service id-$serviceId"
                 #aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --desired-count 0 --region $AWS_PRIMARY_REGION
             fi
         # - name: Verify whether the URL is down or not
