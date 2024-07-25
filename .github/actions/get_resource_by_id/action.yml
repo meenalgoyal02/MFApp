@@ -91,8 +91,8 @@ runs:
 
             done
          
-        elif [ "$resourceType" == 'ecs-service' ]; then 
-          if [-z "$resourceName"]; then
+        elif [ "$resourceType" == 'ecs-service' ]; then         
+          if [ -z "$resourceName" ]; then
               ecs_services=$(aws ecs list-services --cluster "$resourceName" --query serviceArns[*] --output text --region ${{ inputs.aws-region }} --output text)
 
               for service in $ecs_services; do
