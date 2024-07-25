@@ -117,8 +117,8 @@ jobs:
             aws-region: ${{ env.AWS_REGION }}              
             resource-type: 'hosted-zone'               
             resource-name: ''               
-            resource-tag-name: ${{ env.ALB_TAG_KEY }}              
-            resource-tag-value: ${{ env.ALB_TAG_VALUE }} 
+            resource-tag-name: 'Purpose'              
+            resource-tag-value: 'SRE-POC' 
 
 
         - name: Retrieve DNS name of load balancer for secondary region
@@ -139,7 +139,7 @@ jobs:
         - name: Set Route53 weight in alternate region
           continue-on-error: true
           id: disaster-recovery        
-          if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' }}
+          if: ${{ steps.secondary-alb-dns-name.outputs.resource-id !='' && steps.get-hosted-zone-id.outputs.resource-id !='' }}
           run: |
             hosted_zone_id=${{ steps.get-hosted-zone-id.outputs.resource-id }}
             echo "Hosted-zone id-$hosted_zone_id"
