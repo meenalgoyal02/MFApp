@@ -164,14 +164,12 @@ jobs:
          fi;
 
          input_resource=${{ inputs.resource_type }}
-            if [[ "$input_resource" == "ec2" ]]; then
-              impactedResources=" <p>ASG name- ${{ env. ASG_NAME }}&nbsp;</p> <p>ASG desired capacity before run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ASG capacity after run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p>"
-            else
-              impactedResources=" <p>ECS Service: ${{ steps.get-ecs-service-id.outputs.resource-id }}&nbsp;</p> <p>ECS desired capacity before EXPERIMENT run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ECS capacity after EXPERIMENT run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p>"
-            fi;
+          if [[ "$input_resource" == "ec2" ]]; then
+            impactedResources="<p>ASG name- ${{ env. ASG_NAME }}&nbsp;</p> <p>ASG desired capacity before run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ASG capacity after run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p>"
+          else
+            impactedResources=" <p>ECS Service: ${{ steps.get-ecs-service-id.outputs.resource-id }}&nbsp;</p> <p>ECS desired capacity before EXPERIMENT run- ${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</p> <p>ECS capacity after EXPERIMENT run- ${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}&nbsp;</p>"
+          fi;
         
-
-
           conclusion="<p>System failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details</p> <table> <tbody> <tr> <td>1.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>2.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>3.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ env.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ env.experiment_id }}</td> </tr> <tr> <td>5.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>6.&nbsp;</td> <td><strong>AWS resources state impacted</strong></td> <td> ${impactedResources} </td> </tr> <tr> <td>7.</td> <td><strong>Current state of experiment</strong></td> <td>Completed- Exited</td> </tr> <tr> <td>8.</td><td><strong>Conclusion</strong></td> <td>$exp_conclusion</td> </tr> </tbody> </table>"
           echo "email content- $conclusion"
           echo "value=$conclusion">>"$GITHUB_OUTPUT"
