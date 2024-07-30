@@ -178,7 +178,7 @@ jobs:
           conclusionString_end="</td> </tr> <tr> <td>8.</td> <td><strong>Current state of experiment</strong></td> <td>Completed- Exited</td> </tr> <tr> <td>8.</td><td><strong>Conclusion</strong></td> <td>${exp_conclusion}</td> </tr> </tbody> </table></figure>"
 
           conclusion="${conclusionString_begin//\"/\\\"}"
-         # conclusion="$conclusion $impactedResources $conclusionString_end"
+          conclusion="$conclusion $impactedResources"
           echo "email content- $conclusion"
          # echo "conclusion=$conclusion">>"$GITHUB_ENV"
 
