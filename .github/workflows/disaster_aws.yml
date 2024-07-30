@@ -63,7 +63,7 @@ jobs:
              echo "Current date-${currentDate}"
              echo "value=$currentDate">>"$GITHUB_OUTPUT"
             
-        - name: Retrieve DNS name of load balancer for primary region
+        - name: Retrieve DNS name of load balancer
           continue-on-error: true
           id: primary-alb-dns-name 
           uses: ./.github/actions/get_resource_by_id
@@ -72,7 +72,7 @@ jobs:
             aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
             aws-region: ${{ env.AWS_REGION }}              
             resource-type: 'ALB'               
-            resource-name: ''               
+            resource-name: ''  # Get from environment             
             resource-tag-name: ${{ env.TAG_KEY }}              
             resource-tag-value: ${{ env.TAG_VALUE }}   
                     
@@ -153,7 +153,7 @@ jobs:
             resource-tag-value: ${{ env.TAG_VALUE }}
 
 
-        - name: Set ASG capacity in primary region
+        - name: Set instance capacity in primary region
           id: disaster-simulation-ASG  
           if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
           continue-on-error: true     
@@ -169,6 +169,7 @@ jobs:
             fi
         - name: Verify whether the URL is down or not
           continue-on-error: true
+          if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
           id: verify-region-is-down
           run: |  
             sleep 120                   
@@ -203,7 +204,7 @@ jobs:
             else
               value="<h3>Region failure simulation failed.</h3>"
             fi;
-            
+
             input_resource=${{ inputs.resource_type }}
             if [[ "$input_resource" == "ec2" ]]; then
               impactedResources="<ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
