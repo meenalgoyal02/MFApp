@@ -160,12 +160,12 @@ jobs:
           run: |
             input_resource=${{ inputs.resource_type }}
             if [[ "$input_resource" == "ec2" ]]; then
-               aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity 0 --min-size 0 --max-size 0 --region $AWS_REGION
+               aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity $DESIRED_CAPACITY --min-size $MIN_CAPACITY --max-size $MAX_CAPACITY --region $AWS_REGION
             else
                 clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
                 serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
                 echo "ECS service id-$serviceId"
-                aws ecs update-service --cluster $clusterId --service $serviceId --desired-count 0 --region $AWS_REGION
+                aws ecs update-service --cluster $clusterId --service $serviceId --desired-count $DESIRED_CAPACITY --region $AWS_REGION
             fi
         - name: Verify whether the URL is down or not
           continue-on-error: true
