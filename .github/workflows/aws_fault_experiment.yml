@@ -183,5 +183,5 @@ jobs:
          # echo "email content- $conclusion"
          # echo "conclusion=$conclusion">>"$GITHUB_ENV"
 
-          echo "value=$exp_conclusion">>"$GITHUB_ENV"
+          echo "value=$exp_conclusion">>"$GITHUB_OUTPUT"
 
