@@ -162,7 +162,10 @@ jobs:
               CHANGE_ID=${{ steps.disaster-recovery.outputs.change_id }}
               STATUS="PENDING"
               i=1
-              while [[ "$STATUS" != "INSYNC" && $i<2 ]]; do
+              while [[ "$STATUS" != "INSYNC" ]]; do
+              if(($i>2)); then
+                break;
+              fi;
                 echo "Waiting for change $CHANGE_ID to become INSYNC..."
                 STATUS=$(aws route53 get-change --id $CHANGE_ID | jq -r '.ChangeInfo.Status')
                 echo "Current status: $STATUS"
