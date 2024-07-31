@@ -179,6 +179,7 @@ jobs:
               HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
               while [[ "$HTTP_STATUS" != "503" ]]; do
                 if(($i>10)); then
+                  echo "${i}"
                   break;
             
                 fi;
@@ -194,7 +195,7 @@ jobs:
                   echo "URL yet available. Sleeping for 30 seconds..."
                   sleep 30
                   echo "${i}"
-                  i+=1
+                  i=$((i + 1))
                 fi;
               done                   
            
