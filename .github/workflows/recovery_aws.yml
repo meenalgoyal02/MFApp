@@ -163,7 +163,7 @@ jobs:
               STATUS="PENDING"
               i=1
               while [[ "$STATUS" != "INSYNC" ]]; do
-              if(($i>2)); then
+              if(($i>10)); then
                 break;
               fi;
                 echo "Waiting for change $CHANGE_ID to become INSYNC..."
@@ -246,7 +246,7 @@ jobs:
               impactedResources="<ol> <li>ECS Service: ${{ steps.get-ecs-service-id.outputs.resource-id }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
             fi;
 
-            value+="<h4>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</h4><table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>Failure Recovery</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> $impactedResources </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr>  </tbody> </table> </figure>"
+            value+="<h4>Conclusion :${{ steps.verify-region-is-up.outputs.Email-subject }}</h4><table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>Failure Recovery</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> $impactedResources </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr><tr><td>8.</td> <td><strong>RTO </strong></td>  </tr>  </tbody> </table> </figure>"
             
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"
