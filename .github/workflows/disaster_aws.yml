@@ -89,7 +89,7 @@ jobs:
             resource-tag-name: ''              
             resource-tag-value: ''
 
-        - name: Set primary region CNAME weight to 0
+        - name: Update CNAME weight
           continue-on-error: true
           id: disaster-in-primary-region
           if: ${{ steps.primary-alb-dns-name.outputs.resource-id !='' }}
@@ -100,7 +100,7 @@ jobs:
                #echo "DNS name of ALB-${{ steps.primary-alb-dns-name.outputs.resource-id }}"
                
                CHANGE_OUTPUT=$(aws route53 change-resource-record-sets --hosted-zone-id ${hosted_zone_id} --change-batch "{ \"Comment\": \"Changes weights of ACTIVE region from 100 to 0\",\"Changes\": [{ \"Action\": \"UPSERT\",
-               \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.PRIMARY_CNAME_IDENTIFIER }}\",\"Weight\": 0,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${alb_id} \"}]  }}]}")
+               \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.PRIMARY_CNAME_IDENTIFIER }}\",\"Weight\": ${CNAME_WEIGHT},\"TTL\":${TTL},\"ResourceRecords\":[{\"Value\":\" ${alb_id} \"}]  }}]}")
                
                 echo "Change Output: $CHANGE_OUTPUT"
                 CHANGE_ID=$(echo $CHANGE_OUTPUT | jq -r '.ChangeInfo.Id')
@@ -166,26 +166,42 @@ jobs:
             else
                 clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
                 serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
-                echo "ECS service id-$serviceId"
+                #echo "ECS service id-$serviceId"
                 aws ecs update-service --cluster $clusterId --service $serviceId --desired-count $DESIRED_CAPACITY --region $AWS_REGION
             fi
         - name: Verify whether the URL is down or not
           continue-on-error: true
           if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
           id: verify-region-is-down
-          run: |  
-            sleep 120                   
-            HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-            echo "HTTP Status- ${HTTP_STATUS}"
-            if [ "$HTTP_STATUS" -eq 503 ]; then
-              echo "Region down completed."
-              echo "::set-output name=Region-down::true"
-              echo "::set-output name=Email-subject:: AWS region is down for Repository- ${{ github.repository }}"
-            else
-              echo "Region down could not be completed."
-              echo "::set-output name=Region-down::false"
-              echo "::set-output name=Email-subject:: Failed in setting AWS region down. "
-            fi
+          run: |
+              i=0  
+              HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+              while [ "$HTTP_STATUS" != "503" && i < 11 ]; do
+                echo "Waiting for url to become unavailable"
+                HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+                echo "Current status: $HTTP_STATUS"
+                if [ "$HTTP_STATUS" -eq 503 ]; then
+                  echo "Region down completed."
+                  echo "::set-output name=Region-down::true"
+                  echo "::set-output name=Email-subject:: AWS region is down for Repository- ${{ github.repository }}"
+                else 
+                  echo "URL yet available. Sleeping for 30 seconds..."
+                  sleep 30
+                  i+=1
+                fi;
+              done                   
+           
+           
+          
+              if [ "$HTTP_STATUS" -eq 200 ]; then
+                echo "Region down completed."
+                echo "::set-output name=Region-down::true"
+                echo "::set-output name=Email-subject:: AWS region is down for Repository- ${{ github.repository }}"
+              else
+                echo "Region down could not be completed."
+                echo "::set-output name=Region-down::false"
+                echo "::set-output name=Email-subject:: Failed in setting AWS region down. "
+              fi;
         
         - name: end date and time
           id: end-date
@@ -204,18 +220,24 @@ jobs:
             if [[ "$outcomeOfHostUpdate" == "success" || "$outcomeOfASGUpdate" == "success" ]]; then
               value="<h3>Region failure simulation completed successfully.</h3>"
             else
-              value="<h3>Region failure simulation failed.</h3>"
+              value="<h3>Region failure simulation failed. Please check the input values supplied.</h3>"
             fi;
 
             input_resource=${{ inputs.resource_type }}
             if [[ "$input_resource" == "ec2" ]]; then
-              impactedResources="<ol> <li>ASG: ${{ env.ASG_NAME }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
+               impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><div> <div><span style="color:#0000ff;">Auto Scaling Group</span></div> </div></td> <td> ${{ env.ASG_NAME }}</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Hosted-zone</span></div> </div> </td> <td>${{ env.CNAME }}</td> </tr> </tbody> </table> </figure>'
             else
-              impactedResources="<ol> <li>ECS Service: ${{ steps.get-ecs-service-id.outputs.resource-id }}</li> <li>Hosted-zone:${{ env.CNAME }}</li> </ol>"
+               
+               impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><div> <div><span style="color:#0000ff;">ECS Service</span></div> </div></td> <td> ${{ steps.get-ecs-service-id.outputs.resource-id }}</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Hosted-zone</span></div> </div> </td> <td>${{ env.CNAME }}</td> </tr> </tbody> </table> </figure>'
             fi;
-           
-            value+="<h4>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</h4><figure class="table"> <table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>AWS Region failure simulation</td> <td>&nbsp;</td> </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_REGION }}</td> <td>&nbsp;</td> </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td> ${impactedResources} </td> <td>&nbsp;</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> <td>&nbsp;</td> </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> <td>&nbsp;</td> </tr></tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td>  <td>&nbsp;</td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  <td>&nbsp;</td></tr> </tbody> </table> </figure>"
+            impactedResources="${impactedResourcesString//\"/\\\"}"       
+            conclusionString_begin+='<h4>Conclusion :${{ steps.verify-region-is-down.outputs.Email-subject }}</h4><figure class="table"> <table> <tbody> <tr> <td>1.</td> <td><strong>Activity Name</strong></td> <td>AWS Region failure simulation</td>  </tr> <tr> <td>2.</td> <td><strong>AWS Region</strong></td> <td>${{ env.AWS_REGION }}</td>  </tr> <tr> <td>3.</td> <td><strong>Impacted resources</strong></td> <td colspan="2">'
             
+             conclusionString_end="</td> </tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td>  </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td>  </tr></tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td>  </tr> </tbody> </table> </figure>"
+             
+             value+="${conclusionString_begin//\"/\\\"}"
+             value+=$impactedResources
+             value+=$conclusionString_end
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"
 

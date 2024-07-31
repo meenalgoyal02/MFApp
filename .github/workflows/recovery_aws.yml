@@ -102,7 +102,7 @@ jobs:
             else
                 clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
                 serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
-                echo "ECS service id-$serviceId"
+               # echo "ECS service id-$serviceId"
                 aws ecs update-service --cluster $clusterId --service $serviceId --desired-count $DESIRED_CAPACITY --region $AWS_REGION
             fi
 
@@ -148,7 +148,7 @@ jobs:
             echo "ALB id-$alb_id"
             set route 53 records update           
             CHANGE_OUTPUT=$(aws route53 change-resource-record-sets --hosted-zone-id ${hosted_zone_id} --change-batch "{ \"Comment\": \"Changes weights of passive region from 0 to 100\",\"Changes\": [{ \"Action\": \"UPSERT\",
-            \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.SECONDARY_CNAME_IDENTIFIER }}\",\"Weight\": 100,\"TTL\":60,\"ResourceRecords\":[{\"Value\":\" ${alb_id} \"}]  }}]}")
+            \"ResourceRecordSet\": {\"Name\": \"${{ env.CNAME }}\", \"Type\": \"CNAME\", \"SetIdentifier\": \"${{ env.SECONDARY_CNAME_IDENTIFIER }}\",\"Weight\": ${CNAME_WEIGHT},\"TTL\":${TTL},\"ResourceRecords\":[{\"Value\":\" ${alb_id} \"}]  }}]}")
             echo "Change Output: $CHANGE_OUTPUT"
             CHANGE_ID=$(echo $CHANGE_OUTPUT | jq -r '.ChangeInfo.Id')
             echo "Change ID: $CHANGE_ID"
@@ -204,7 +204,7 @@ jobs:
             outcomeOfASGUpdate="${{ steps.recover-asg.outcome }}"
 
             if [[ "$outcomeOfHostUpdate" == "failure" || "$outcomeOfASGUpdate" == "failure" ]]; then
-              value="<h3>Failure recovery failed.</h3>"
+              value="<h3>Failure recovery failed. Please check the input values supplied.</h3>"
             else
               value="<h3>Failure recovery completed.</h3>"
             fi;

@@ -96,14 +96,14 @@ runs:
               ecs_services=$(aws ecs list-services --cluster "$resourceName" --query serviceArns[*] --output text --region ${{ inputs.aws-region }} --output text)
 
               for service in $ecs_services; do
-                echo "Service arn:$service"
+                #echo "Service arn:$service"
                 tag=$(aws ecs describe-services --services $service --cluster "$resourceName" --include TAGS --query services[*].tags[?key==\`${tagKey}\`] --output text --region ${{ inputs.aws-region }})
 
-                echo "Output tag value-${tag}"
+                #echo "Output tag value-${tag}"
                                 
                 if [[ "$tag" == *${tagValue}* ]]; then
                   service_arn=$service
-                  echo "Service-arn:$service_arn"
+                 # echo "Service-arn:$service_arn"
                   echo "resource-id=$service_arn">> "$GITHUB_OUTPUT" 
                   break;
                 fi 
