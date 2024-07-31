@@ -188,6 +188,7 @@ jobs:
                 else 
                   echo "URL yet available. Sleeping for 30 seconds..."
                   sleep 30
+                  echo "${i}"
                   i+=1
                 fi;
               done                   
