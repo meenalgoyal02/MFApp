@@ -162,12 +162,13 @@ jobs:
           run: |
             input_resource=${{ inputs.resource_type }}
             if [[ "$input_resource" == "ec2" ]]; then
-               aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity $DESIRED_CAPACITY --min-size $MIN_CAPACITY --max-size $MAX_CAPACITY --region $AWS_REGION
+               echo "Desired capacity-${DESIRED_CAPACITY}"
+               aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity ${DESIRED_CAPACITY} --min-size ${MIN_CAPACITY} --max-size ${MAX_CAPACITY} --region $AWS_REGION
             else
                 clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
                 serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
                 #echo "ECS service id-$serviceId"
-                aws ecs update-service --cluster $clusterId --service $serviceId --desired-count $DESIRED_CAPACITY --region $AWS_REGION
+                aws ecs update-service --cluster $clusterId --service $serviceId --desired-count ${DESIRED_CAPACITY} --region $AWS_REGION
             fi
         - name: Verify whether the URL is down or not
           continue-on-error: true
@@ -176,7 +177,7 @@ jobs:
           run: |
               i=0  
               HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-              while [ "$HTTP_STATUS" != "503" && i < 11 ]; do
+              while [[ "$HTTP_STATUS" != "503" && i < 11 ]]; do
                 echo "Waiting for url to become unavailable"
                 HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
                 echo "Current status: $HTTP_STATUS"
