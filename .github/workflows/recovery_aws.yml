@@ -161,21 +161,28 @@ jobs:
           run: |
               CHANGE_ID=${{ steps.disaster-recovery.outputs.change_id }}
               STATUS="PENDING"
-              while [ "$STATUS" != "INSYNC" ]; do
+              i=1
+              while [[ "$STATUS" != "INSYNC" && $i<2 ]]; do
                 echo "Waiting for change $CHANGE_ID to become INSYNC..."
                 STATUS=$(aws route53 get-change --id $CHANGE_ID | jq -r '.ChangeInfo.Status')
                 echo "Current status: $STATUS"
                 if [ "$STATUS" != "INSYNC" ]; then
                   echo "Not in sync yet. Sleeping for 30 seconds..."
                   sleep 30
+                  echo "$i"
+                  i=$((i + 1))
                 fi
               done
-              echo "Change $CHANGE_ID is now INSYNC."  
+
+              if [ "$STATUS" != "INSYNC" ]; then
+                echo "Change $CHANGE_ID is not INSYNC."  
+              else
+                echo "Change $CHANGE_ID is now INSYNC."  
+              fi;
         - name: Verify whether the URL is up or not
           continue-on-error: true
           id: verify-region-is-up
           run: | 
-          
             i=1  
             HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
             while [[ "$HTTP_STATUS" != "200" ]]; do
