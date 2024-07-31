@@ -174,19 +174,34 @@ jobs:
         - name: Verify whether the URL is up or not
           continue-on-error: true
           id: verify-region-is-up
-          run: |  
-                sleep 120                   
-                HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-                echo "HTTP Status- ${HTTP_STATUS}"
-                if [ "$HTTP_STATUS" -eq 200 ]; then
-                  echo "Region up completed."
-                  echo "::set-output name=Region-up::true"
-                  echo "::set-output name=Email-subject:: AWS region is up for Repository- ${{ github.repository }}"
-                else
-                  echo "Region up could not be completed."
-                  echo "::set-output name=Region-up::false"
-                  echo "::set-output name=Email-subject:: Failed in setting AWS region up. "
-                fi
+          run: | 
+          
+            i=0  
+            HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+            while [[ "$HTTP_STATUS" != "200" && i < 11 ]]; do
+              echo "Waiting for url to become unavailable"
+              HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+              echo "Current status: $HTTP_STATUS"
+              if [ "$HTTP_STATUS" -eq 200 ]; then
+                echo "Region up completed."
+                echo "::set-output name=Region-up::true"
+                echo "::set-output name=Email-subject:: AWS region is up for Repository- ${{ github.repository }}"
+              else 
+                echo "URL not yet available. Sleeping for 30 seconds..."
+                sleep 30
+                i+=1
+              fi;
+            done                   
+            if [ "$HTTP_STATUS" -eq 503 ]; then
+              echo "Region up could not be completed."
+              echo "::set-output name=Region-up::false"
+              echo "::set-output name=Email-subject:: Failed in setting AWS region up. "
+            else
+              echo "Region up completed."
+              echo "::set-output name=Region-up::true"
+              echo "::set-output name=Email-subject:: AWS region is up for Repository- ${{ github.repository }}"               
+            fi;
+
         - name: end date and time
           continue-on-error: true
           id: end-date
