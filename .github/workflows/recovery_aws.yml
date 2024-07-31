@@ -183,7 +183,7 @@ jobs:
                     echo "${i}"
                     break;
               fi;
-              echo "Waiting for url to become unavailable"
+              echo "Waiting for url to get available"
               HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
               echo "Current status: $HTTP_STATUS"
               if [ "$HTTP_STATUS" -eq 200 ]; then
