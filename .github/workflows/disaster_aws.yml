@@ -188,12 +188,15 @@ jobs:
           run: |
               i=1  
               HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+
               while [[ "$HTTP_STATUS" != "503" ]]; do
+                
+                echo "Inside loop"
                 if(($i>10)); then
                   echo "${i}"
                   break;
-            
                 fi;
+                
                 echo "Waiting for url to become unavailable."
                 HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
                 echo "Current status: $HTTP_STATUS"
