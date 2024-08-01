@@ -65,7 +65,7 @@ jobs:
         id: notification-email-content        
         run: |
           echo "Email content- ${{ needs.run-experiment.outputs.conclusion }}"
-          content="<html><body>"
+          content="<html><body><head><style>table, th, td { border: 1px solid black;border-collapse: collapse; vertical-align:top;}</style> </head>"
           if [[ "${{ github.event.inputs.outage-type }}" == "region-failure" ]]; then             
             content+="${{ needs.run-region-failover.outputs.conclusion }}"
             content+="<br/>"
@@ -88,7 +88,7 @@ jobs:
               to: ${{ env.RECEIVER_EMAIL_ID }}
               username:  ${{env.SENDER_EMAIL_ID}}
               password: ${{ secrets.SMTP_PASSWORD }}
-              subject: 'Failure simulation completed for repository-${{ github.repository }} '                 
+              subject: 'Failure simulation completed for Application-${{ github.repository }} '                 
               html_body: |
                 ${{ steps.notification-email-content.outputs.content}}
        
