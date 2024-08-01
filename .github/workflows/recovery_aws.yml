@@ -188,7 +188,7 @@ jobs:
           run: | 
             i=1  
             HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-            while [[ "$HTTP_STATUS" != "200" ]]; do
+            while [ "$HTTP_STATUS" != "200" ]; do
               if(($i>10)); then
                     echo "${i}"
                     break;
