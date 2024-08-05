@@ -65,7 +65,7 @@ jobs:
         id: notification-email-content        
         run: |
           echo "Email content- ${{ needs.run-experiment.outputs.conclusion }}"
-          content="<html><body><head><style>table, th, td { border: 1px solid black;border-collapse: collapse; vertical-align:top;}</style> </head>"
+          content="<html><body><head><style>table, th, td { border: 1px solid black;border-collapse: collapse; vertical-align:top; padding-left: 15px;padding-right: 15px;}</style> </head>"
           if [[ "${{ github.event.inputs.outage-type }}" == "region-failure" ]]; then             
             content+="${{ needs.run-region-failover.outputs.conclusion }}"
             content+="<br/>"
