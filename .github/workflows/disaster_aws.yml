@@ -248,7 +248,7 @@ jobs:
 
             input_resource=${{ inputs.resource_type }}
             if [[ "$input_resource" == "ec2" ]]; then
-               impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <tbody> <tr> <td><div> <div><span style="color:#0000ff;">Auto Scaling Group</span></div> </div></td> <td> ${{ env.ASG_NAME }}</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Hosted-zone</span></div> </div> </td> <td>${{ env.CNAME }}</td> </tr> </tbody> </table> </figure>'
+               impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <tbody> <tr> <td><div> <div><span style="color:#546e7a;">Auto Scaling Group</span></div> </div></td> <td> ${{ env.ASG_NAME }}</td></tr> <tr> <td> <div> <div><span style="color:#546e7a;">Hosted-zone</span></div> </div> </td> <td>${{ env.CNAME }}</td> </tr> </tbody> </table> </figure>'
             else
                
                impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <tbody> <tr> <td><div> <div><span style="color:#546e7a;">ECS Service</span></div> </div></td> <td> ${{ steps.get-ecs-service-id.outputs.resource-id }}</td></tr> <tr> <td> <div> <div><span style="color:#546e7a;">Hosted-zone</span></div> </div> </td> <td>${{ env.CNAME }}</td> </tr> </tbody> </table> </figure>'
