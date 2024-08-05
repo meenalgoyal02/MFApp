@@ -258,7 +258,7 @@ jobs:
             conclusionString_end="</tr> <tr> <td>4.</td> <td><strong>Activity Start Time</strong></td> <td>${{ steps.start-date.outputs.value }}</td>  </tr> <tr> <td>5.</td> <td><strong>Activity End Time</strong></td> <td>${{ steps.end-date.outputs.value }}</td>  </tr></tr> <tr> <td>6.</td> <td><strong>Service Name </strong></td><td></td> </tr><tr> <td>7.</td> <td><strong>CI Id </strong></td><td></td>  </tr><tr> <td>8.</td> <td><strong>Duration of execution</strong></td> <td>${total_duration}</td> </tr><tr><td>9.</td> <td><strong>RTO </strong></td><td> 8 Min</td>  </tr> </tbody> </table> </figure>"
             
             value+="${conclusionString_begin//\"/\\\"}"
-            value+=<td>$impactedResources</td>
+            value+="<td>"$impactedResources"</td>"
             value+=$conclusionString_end          
             echo "value=$value">>"$GITHUB_OUTPUT"
             echo "Email content-$value"
