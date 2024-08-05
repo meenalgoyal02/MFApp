@@ -1,0 +1,25 @@
+name: Display Run Duration
+
+on: [push]
+
+jobs:
+  display-duration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start time
+        id: start-time
+        run: echo "START_TIME=$(date -u)" >> $GITHUB_ENV
+
+      # Your other steps go here
+
+      - name: End time
+        id: end-time
+        run: echo "END_TIME=$(date -u)" >> $GITHUB_ENV
+
+      - name: Calculate duration
+        id: calculate-duration
+        run: |
+          start_time=$(date -u -d "${{ env.START_TIME }}" +%s)
+          end_time=$(date -u -d "${{ env.END_TIME }}" +%s)
+          duration=$((end_time - start_time))
+          echo "Total duration: $((duration / 3600)) hours $(((duration % 3600) / 60)) minutes $((duration % 60)) seconds"
