@@ -19,6 +19,8 @@ jobs:
       - name: Calculate duration
         id: calculate-duration
         run: |
+          echo "${{ env.START_TIME }}"
+          echo "${{ env.END_TIME }}"
           start_time=$(date -u -d "${{ env.START_TIME }}" +%s)
           end_time=$(date -u -d "${{ env.END_TIME }}" +%s)
           duration=$((end_time - start_time))
