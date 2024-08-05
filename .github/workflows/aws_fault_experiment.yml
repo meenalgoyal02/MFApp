@@ -161,7 +161,8 @@ jobs:
         start_time=$(date -u -d "${{ steps.start-date.outputs.value }}" +%s)
         end_time=$(date -u -d "${{ steps.end-date.outputs.value }}" +%s)
         duration=$((end_time - start_time))
-        echo "Total duration: $((duration / 3600)) hours $(((duration % 3600) / 60)) minutes $((duration % 60)) seconds"
+        total_duration=$(echo $((duration / 3600)) hours $(((duration % 3600) / 60)) minutes $((duration % 60)) seconds)
+        echo "Total duration: $total_duration"
 
         if [[ "${{ steps.experiment-state.outcome }}" == "success" ]]; then
           exp_conclusion="Experiment completed successfully."
@@ -184,7 +185,7 @@ jobs:
           conclusionString_end="</tr> <tr> <td>8.</td> <td><strong>Duration of execution</strong></td> <td>${duration}</td> </tr><tr> <td>9.</td> <td><strong>Current state of experiment</strong></td> <td>${{ steps.experiment-state.outputs.value }}</td> </tr> <tr> <td>10.</td><td><strong>Conclusion</strong></td> <td>${exp_conclusion}</td> </tr> </tbody> </table></figure>"
 
           conclusion="${conclusionString_begin//\"/\\\"}"
-          conclusion+=$impactedResources
+          conclusion+="<td>"+$impactedResources+"</td>"
           conclusion+=$conclusionString_end
 
           echo "value=$conclusion">>"$GITHUB_OUTPUT"
