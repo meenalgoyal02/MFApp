@@ -214,7 +214,7 @@ jobs:
             else
               echo "Region up completed."
               echo "::set-output name=Region-up::true"
-              echo "::set-output name=Email-subject:: AWS region is up for Repository- ${{ github.repository }}"               
+              echo "::set-output name=Email-subject:: AWS region is up for Application- ${{ github.repository }}"               
             fi;
 
         - name: end date and time

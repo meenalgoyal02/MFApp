@@ -218,7 +218,7 @@ jobs:
               else
                 echo "Region down completed successfully."
                 echo "::set-output name=Region-down::true"
-                echo "::set-output name=Email-subject::AWS region is down for Repository- ${{ github.repository }}  "
+                echo "::set-output name=Email-subject::AWS region is down for Application- ${{ github.repository }}  "
               fi;
         
         - name: end date and time
