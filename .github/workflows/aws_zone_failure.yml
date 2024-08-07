@@ -128,6 +128,7 @@ jobs:
           else
             other_state=$((other_state + 1))
           fi;
+          echo "Number of healthy instances- ${healthy_instance_count}"
        done
         echo "Number of healthy instances- ${healthy_instance_count}"
         echo "Number of other state instances- ${other_state}"
