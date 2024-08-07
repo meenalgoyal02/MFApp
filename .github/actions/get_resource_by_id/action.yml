@@ -83,9 +83,9 @@ runs:
                fi;
           else
             if [ "${{ inputs.return-value-type }}" == 'ARN' ]; then 
-                resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }} --query 'LoadBalancers[*].LoadBalancerArn')           
+                resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }} --query 'LoadBalancers[*].LoadBalancerArn'  --output text)           
             else
-               resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
+               resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName' )
             fi;
             echo "DNS name by ALB name:-$resource_id"
           fi;
