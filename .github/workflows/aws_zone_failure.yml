@@ -120,10 +120,16 @@ jobs:
       
        echo "Health states-$health_state"
        #Step3: Iterate over the list and find the number of healthy instances
+       
        for instanceState in $health_state; do
           echo "Health state- $instanceState"
+          if [ $instanceState -eq "healthy" ]
+            healthy_instance_count+=1
+          else
+            other_state+=1
        done
-   
+        echo "Number of healthy instances- ${healthy_instance_count}"
+        echo "Number of other state instances- ${other_state}"
     # - name: Verify whether the URL up
     #   id: app-url-up
     #   #continue-on-error: true
