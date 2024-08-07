@@ -123,7 +123,7 @@ jobs:
        healthy_instance_count=0
        for instanceState in $health_state; do
           echo "Health state- $instanceState"
-          if [[ $instanceState -eq "healthy" ]]; then
+          if [[ $instanceState == "healthy" ]]; then
             healthy_instance_count=$((healthy_instance_count + 1))            
           else
             other_state=$((other_state + 1))
