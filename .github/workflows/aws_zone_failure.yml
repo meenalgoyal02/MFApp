@@ -157,7 +157,7 @@ jobs:
 
     - name: Monitor FIS experiment
       continue-on-error: true
-      if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
+     # if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
       id: experiment-state
       run: |
         state="running"
