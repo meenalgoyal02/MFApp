@@ -102,7 +102,7 @@ jobs:
         resource-tag-name: ${{ env.TAG_KEY }}              
         resource-tag-value: ${{ env.TAG_VALUE }}
         return-value-type: 'target-group'  
-       #S additional-help-parameter : ${{ steps.get-alb-arn.outputs.resource-id }}  
+        additional-help-parameter : ${{ steps.get-alb-arn.outputs.resource-id }}  
 
 
     # - name: Verify the target-group-arn
