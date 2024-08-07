@@ -169,7 +169,7 @@ jobs:
         #if [[ "$input_resource" == "ec2" ]]; then           
 
             value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
-            
+   
         # else
         #     clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
         #     serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
