@@ -71,13 +71,17 @@ runs:
               fi
 
               # Step 3: Retrieve the DNS name of the load balancer
-              dns_name=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --region ${{ inputs.aws-region }} --output text)
-              echo "DNS name by tag name:-$dns_name"
+              if [ "${{ inputs.return-value-type }}" == 'ARN' ]; then 
+                 resource_id="$load_balancer_arn"
+              else
+                resource_id=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --region ${{ inputs.aws-region }} --output text)
+                echo "DNS name by tag name:-$resource_id"
+              fi;
           else
               dns_name=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
               echo "DNS name by ALB name:-$dns_name"
           fi;
-          echo "resource-id=$dns_name">> "$GITHUB_OUTPUT" 
+          echo "resource-id=$resource_id">> "$GITHUB_OUTPUT" 
         elif [ "$resourceType" == 'ecs-cluster' ]; then         
             ecs_clusters=$(aws ecs list-clusters --region ${{ inputs.aws-region }} --query clusterArns[*] --output text)
 
