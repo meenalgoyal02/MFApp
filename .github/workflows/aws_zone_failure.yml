@@ -83,8 +83,8 @@ jobs:
         aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
         aws-region: ${{ env.AWS_REGION }}              
         resource-type: 'ALB'               
-        resource-name: ''  # Get from environment             
-        resource-tag-name: ${{ env.TAG_KEY }}              
+        resource-name: ${{ env.ALB_NAME }}           
+        resource-tag-name: '${{ env.TAG_KEY }}'              
         resource-tag-value: ${{ env.TAG_VALUE }}
         return-value-type: 'ARN'
 
