@@ -88,27 +88,27 @@ jobs:
         resource-tag-value: ${{ env.TAG_VALUE }}
         return-value-type: 'ARN'
 
-    - name: Find the ARN of target group
-      #continue-on-error: true
-      id: disaster-in-primary-region
-      if: ${{ steps.get-alb-arn.outputs.resource-id !='' }} 
-      uses: ./.github/actions/get_resource_by_id
-      with:
-        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
-        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
-        aws-region: ${{ env.AWS_REGION }}              
-        resource-type: 'target-group'               
-        resource-name: ${{ env.TARGET_GROUP_NAME }}  # Get from environment             
-        resource-tag-name: ${{ env.TAG_KEY }}              
-        resource-tag-value: ${{ env.TAG_VALUE }}
-        return-value-type: 'target-group'  
-        additional-help-parameter :  ${{ steps.primary-alb-dns-name.outputs.resource-id }}  
+    # - name: Find the ARN of target group
+    #   #continue-on-error: true
+    #   id: disaster-in-primary-region
+    #   if: ${{ steps.get-alb-arn.outputs.resource-id !='' }} 
+    #   uses: ./.github/actions/get_resource_by_id
+    #   with:
+    #     aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+    #     aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+    #     aws-region: ${{ env.AWS_REGION }}              
+    #     resource-type: 'target-group'               
+    #     resource-name: ${{ env.TARGET_GROUP_NAME }}  # Get from environment             
+    #     resource-tag-name: ${{ env.TAG_KEY }}              
+    #     resource-tag-value: ${{ env.TAG_VALUE }}
+    #     return-value-type: 'target-group'  
+    #     additional-help-parameter :  ${{ steps.primary-alb-dns-name.outputs.resource-id }}  
 
 
-    - name: Verify the target-group-arn
-      run: |
-       targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
-       echo "Output value for tg arn- ${targetGroupId}"
+    # - name: Verify the target-group-arn
+    #   run: |
+    #    targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
+    #    echo "Output value for tg arn- ${targetGroupId}"
 
     # - name: Verify whether the URL up
     #   continue-on-error: true
