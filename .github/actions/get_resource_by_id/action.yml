@@ -75,15 +75,15 @@ runs:
               fi
 
               # Step 3: Retrieve the ARN/DNS name of the load balancer
-              if [ "return-value-type" == 'ARN' ]; then 
+              if [ "${{ inputs.return-value-type }}" == 'ARN' ]; then 
                  resource_id="$load_balancer_arn"
               else
                 resource_id=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --region ${{ inputs.aws-region }} --output text)
                 echo "DNS name by tag name:-$resource_id"
                fi;
           else
-            if [ "return-value-type" == 'ARN' ]; then 
-                resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }} --query LoadBalancers[*].LoadBalancerArn)            
+            if [ "${{ inputs.return-value-type }}" == 'ARN' ]; then 
+                resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }} --query LoadBalancers[*].LoadBalancerArn)           
             else
                resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
             fi;
