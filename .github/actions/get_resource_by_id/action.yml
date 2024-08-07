@@ -125,6 +125,9 @@ runs:
                 fi 
               done
           fi;        
+        elif [ "$resourceType" == 'target-group' ]; then
+          alb_arn="${{ inputs.additional-help-parameter }}"
+          echo "ALB- arn:$alb_arn"
         else
           if [ -z "${{ inputs.resource-name }}" ]; then
             # Retrieve by tag
