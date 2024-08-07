@@ -133,8 +133,8 @@ jobs:
             resource-type: 'ALB'               
             resource-name: ''               
             resource-tag-name: ${{ env.ALB_TAG_KEY }}              
-            resource-tag-value: ${{ env.ALB_TAG_VALUE }}                   
-                
+            resource-tag-value: ${{ env.ALB_TAG_VALUE }}  
+            return-value-type: 'DNS'                                   
    
         - name: Set Route53 weight in alternate region
           continue-on-error: true

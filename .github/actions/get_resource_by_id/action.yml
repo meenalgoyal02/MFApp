@@ -12,7 +12,7 @@ inputs:
       description: 'AWS Region'
       required: true
   resource-type:
-        description: 'The type of resource for whome id is required.Possible values are: ALB/ecs-cluster/ecs-service/hosted-zone '
+        description: 'The type of resource for whome id is required.Possible values are: ALB/ecs-cluster/ecs-service/hosted-zone/target-group '
         required: false
         default: 'ALB'
   resource-name:
@@ -27,6 +27,14 @@ inputs:
         description: 'Resource tag value. In case of ecs cluster/service, it is mandatory'
         required: false
         default: ''
+  return-value-type:
+        description: 'What return type of value is required, in case of ALB- it could be ARN/DNS'
+        required: false
+        default: 'ARN'  
+  additional-help-parameter:
+        description: 'Value of any additional parameter, spedifically, in case of target group, it contains ARN of Load balancer'
+        required: false
+        
 outputs:
   resource-id:
     description: 'Resource id'    
@@ -66,14 +74,22 @@ runs:
                 exit 1
               fi
 
-              # Step 3: Retrieve the DNS name of the load balancer
-              dns_name=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --region ${{ inputs.aws-region }} --output text)
-              echo "DNS name by tag name:-$dns_name"
+              # Step 3: Retrieve the ARN/DNS name of the load balancer
+              if [ "return-value-type" == 'ARN' ]; then 
+                 resource_id="$load_balancer_arn"
+              else
+                resource_id=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --region ${{ inputs.aws-region }} --output text)
+                echo "DNS name by tag name:-$resource_id"
+               fi;
           else
-              dns_name=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
-              echo "DNS name by ALB name:-$dns_name"
+            if [ "return-value-type" == 'ARN' ]; then 
+                resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }} --query LoadBalancers[*].LoadBalancerArn)            
+            else
+               resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
+            fi;
+            echo "DNS name by ALB name:-$resource_id"
           fi;
-          echo "resource-id=$dns_name">> "$GITHUB_OUTPUT" 
+          echo "resource-id=$resource_id">> "$GITHUB_OUTPUT" 
         elif [ "$resourceType" == 'ecs-cluster' ]; then         
             ecs_clusters=$(aws ecs list-clusters --region ${{ inputs.aws-region }} --query clusterArns[*] --output text)
 
@@ -109,6 +125,30 @@ runs:
                 fi 
               done
           fi;
+        elif [ "$resourceType" == 'target-group' ]; then
+          alb_arn="${{ inputs.additional-help-parameter }}"
+          if [-z "$alb_arn"]; then
+                echo "Enough inputs not supplied. Input parameter name -additional-help-parameter"
+          elif [ -z "${{ inputs.resource-name }}" ]; then
+            # step1: For the Load balancer, retrieve all the Target groups
+            target_groups=$(aws elbv2 describe-target-groups --load-balancer-arn $alb_arn --region ${{ inputs.aws-region }} --query TargetGroups[*].TargetGroupArn --output text)
+            echo "Target group ARNs-${target_groups}"
+
+            # Step2: Iterate over list of Target groups
+             for arn in $target_groups; do
+               tag=$(aws elbv2 describe-tags --resource-arns $arn --region ${{ inputs.aws-region }} --query TagDescriptions[*].Tags[?Key==\`${tagKey}\`] --output text)
+               echo "Output tag value-${tag}"
+                               
+              if [[ "$tag" == *${tagValue}* ]]; then
+                resource_arn=$arn
+                echo "Target-group-arn:$resource_arn"                
+                break;
+              fi 
+             done;
+          else                         
+               resource_id=$(aws elbv2 describe-target-groups --load-balancer-arn $alb_arn --region ${{ inputs.aws-region }} --query TargetGroups[?TargetGroupName==\`${{ inputs.resource-name }\`'].TargetGroupArn --output text)
+          fi;
+          echo "resource-id=$resource_id">> "$GITHUB_OUTPUT"
         else
           if [ -z "${{ inputs.resource-name }}" ]; then
             # Retrieve by tag

@@ -1,24 +1,11 @@
 name: Run AWS FIS Experiment
 
 on:
-  workflow_call:
-    inputs:
-      resource_type:
-        description: 'The type of resource to bring down'
-        default: 'ec2'
-        required: true
-        type: string
-    secrets:    
-      AWS_ACCESS_KEY_ID:
-            required: true
-            
-      AWS_SECRET_ACCESS_KEY:
-                required: true
-    outputs:
-      conclusion:
-        description: conclusion of the activity executed
-        value: ${{ jobs.run-fis-experiment.outputs.conclusion }}
-      
+  push
+env:
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+       
 jobs:
   run-fis-experiment:
     outputs: 
@@ -41,36 +28,17 @@ jobs:
 
           
     - name: Set Environment Variables from File
-      if: ${{ inputs.resource_type == 'ec2'}}
+      #if: ${{ inputs.resource_type == 'ec2'}}
       uses: ./.github/actions/setup-environment
       with:
-          var_file_path: ./.github/variables/fis_aws.env
+          var_file_path: ./.github/variables/zone_aws.env
+   
         
-    - name: Set Environment Variables from File
-      if: ${{ inputs.resource_type == 'ecs'}}
-      uses: ./.github/actions/setup-environment
-      with:
-          var_file_path: ./.github/variables/fis_ecs.env    
-          
-          
-
-    - name: Verify whether the URL up
-      continue-on-error: true
-      #if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
-      id: verify-region-is-up
-      run: |
-            
-              HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-
-              if [ "$HTTP_STATUS" -eq 200 ]; then
-                echo "URL-${env.CNAME} is available to respond."
-                echo "::set-output name=value::true"
-                
-              else
-                echo "Region down could not be completed."
-                echo "::set-output name=value::false"
-               
-              fi;
+    # - name: Set Environment Variables from File
+    #   if: ${{ inputs.resource_type == 'ecs'}}
+    #   uses: ./.github/actions/setup-environment
+    #   with:
+    #       var_file_path: ./.github/variables/fis_ecs.env                        
 
     - name: Set up AWS CLI
       uses: aws-actions/configure-aws-credentials@v1
@@ -80,116 +48,177 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: update desired capacity in ASG
-      id: asg-desired-capacity-update 
-      continue-on-error: true     
+      id: asg-desired-capacity-update    
       run: |
         input_resource=${{ inputs.resource_type }}
-        if [[ "$input_resource" == "ec2" ]]; then
+        #if [[ "$input_resource" == "ec2" ]]; then
             value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
-
-            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity ${DESIRED_CAPACITY} --min-size ${MIN_CAPACITY} --max-size ${MAX_CAPACITY} --region $AWS_REGION
-           
+            capacity_update=false
+            while[$value<$DESIRED_CAPACITY]; do
+               if [ "$capacity_update" = false ]; then
+                  aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity ${DESIRED_CAPACITY} --min-size ${MIN_CAPACITY} --max-size ${MAX_CAPACITY} --region $AWS_REGION
+                  capacity_update=true
+                  echo "Inside loop if block. Updating capacity."
+                else
+                  sleep 30;
+                  value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+                  echo "Inside loop else block. ASG current capacity- ${value}"
+                fi;
+            done;
         # else
         #     clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
         #     serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
         #     echo "ECS service id-$serviceId"           
-        #     value=$(aws ecs describe-services --cluster $clusterId --service $serviceId --region $AWS_REGION --query services[*].deployments[*].desiredCount --output text)            
-        fi;
-        echo "$value"
-        echo "value=$value">>"$GITHUB_OUTPUT"
+        #     value=$(aws ecs describe-services --cluster $clusterId --service $serviceId --region  $AWS_REGION --query services[*].deployments[*].desiredCount --output text)            
+        # fi;
+         echo "$value"
+         echo "value=$value">>"$GITHUB_OUTPUT"
+      
+    - name: Retrieve ARN name of load balancer
+      #continue-on-error: true
+      id: get-alb-arn
+      uses: ./.github/actions/get_resource_by_id
+      with:
+        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+        aws-region: ${{ env.AWS_REGION }}              
+        resource-type: 'ALB'               
+        resource-name: ''  # Get from environment             
+        resource-tag-name: ${{ env.TAG_KEY }}              
+        resource-tag-value: ${{ env.TAG_VALUE }}
+        return-value-type: 'ARN'
+
+    - name: Find the ARN of target group
+      #continue-on-error: true
+      id: disaster-in-primary-region
+      if: ${{ steps.get-alb-arn.outputs.resource-id !='' }} 
+      uses: ./.github/actions/get_resource_by_id
+      with:
+        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}            
+        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY}}              
+        aws-region: ${{ env.AWS_REGION }}              
+        resource-type: 'target-group'               
+        resource-name: ${{ env.TARGET_GROUP_NAME }}  # Get from environment             
+        resource-tag-name: ${{ env.TAG_KEY }}              
+        resource-tag-value: ${{ env.TAG_VALUE }}
+        return-value-type: 'target-group'  
+        additional-help-parameter :  ${{ steps.primary-alb-dns-name.outputs.resource-id }}  
+
+
+    - name: Verify the target-group-arn
+      run: |
+       targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
+       echo "Output value for tg arn- ${targetGroupId}"
+
+    # - name: Verify whether the URL up
+    #   continue-on-error: true
+    #   #if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
+    #   id: verify-region-is-up
+    #   run: |
+    #           HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+
+    #           if [ "$HTTP_STATUS" -eq 200 ]; then
+    #             echo "URL-${env.CNAME} is up."
+    #             echo "::set-output name=value::true"
+                
+    #           else
+    #             echo "Region down could not be completed."
+    #             echo "::set-output name=value::false"
+                
+    #           fi;
     
-    - name: Start FIS experiment
-      continue-on-error: true
-      if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
-      id: start_experiment
-      run: |
-        experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
-        echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
-        echo "Experiment started with ID: $experiment_id"
+    # - name: Start FIS experiment
+    #   continue-on-error: true
+    #   if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
+    #   id: start_experiment
+    #   run: |
+    #     experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
+    #     echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
+    #     echo "Experiment started with ID: $experiment_id"
 
-    - name: Monitor FIS experiment
-      continue-on-error: true
-      if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
-      id: experiment-state
-      run: |
-        state="running"
+    # - name: Monitor FIS experiment
+    #   continue-on-error: true
+    #   if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
+    #   id: experiment-state
+    #   run: |
+    #     state="running"
 
-        while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
-          state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
-          echo "Current state: $state"
+    #     while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
+    #       state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
+    #       echo "Current state: $state"
 
-          #check current URL status
-          app_availability=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-                zone_failure=true
-                echo "URL-${env.CNAME} is not available to respond."
-                echo "::set-output name=zone_failure::true"
-           else
-                app_recovered=true
-                echo "URL-${env.CNAME} is not available to respond."
-                echo "::set-output name=app_recovered::true"
-          fi;
-          if [[ $zone_failure && app_recovered ]]; then
-             #stop experiment
-          fi;
-          sleep 10
-        done
-        echo "Experiment completed with state: $state"
-        echo "value=$state">>"$GITHUB_OUTPUT"
+    #       #check current URL status
+    #       app_availability=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+    #       if [ "$HTTP_STATUS" -ne 200 ]; then
+    #             zone_failure=true
+    #             echo "URL-${env.CNAME} is not available to respond."
+    #             echo "::set-output name=zone_failure::true"
+    #        else
+    #             app_recovered=true
+    #             echo "URL-${env.CNAME} is not available to respond."
+    #             echo "::set-output name=app_recovered::true"
+    #       fi;
+    #       if [[ $zone_failure && app_recovered ]]; then
+    #          #stop experiment
+    #       fi;
+    #       sleep 10
+    #     done
+    #     echo "Experiment completed with state: $state"
+    #     echo "value=$state">>"$GITHUB_OUTPUT"
 
-    - name: update current instance desired capacity
-      id: asg-desired-capacity-after-experiment-run  
-      continue-on-error: true     
-      run: |
-        input_resource=${{ inputs.resource_type }}
-        if [[ "$input_resource" == "ec2" ]]; then
-            aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity ${DESIRED_CAPACITY} --min-size ${MIN_CAPACITY} --max-size ${MAX_CAPACITY} --region $AWS_REGION   
+    # - name: update current instance desired capacity
+    #   id: asg-desired-capacity-after-experiment-run  
+    #   continue-on-error: true     
+    #   run: |
+    #     input_resource=${{ inputs.resource_type }}
+    #     if [[ "$input_resource" == "ec2" ]]; then
+    #         aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity ${DESIRED_CAPACITY} --min-size ${MIN_CAPACITY} --max-size ${MAX_CAPACITY} --region $AWS_REGION   
 
-            value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+    #         value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
             
         # else
         #     clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
         #     serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
         #     echo "ECS service id-$serviceId"           
         #     value=$(aws ecs describe-services --cluster $clusterId --service $serviceId --region $AWS_REGION --query services[*].deployments[*].desiredCount --output text)            
-        fi;
-        echo "$value"
-        echo "value=$value">>"$GITHUB_OUTPUT"
+    #     fi;
+    #     echo "$value"
+    #     echo "value=$value">>"$GITHUB_OUTPUT"
 
-    - name: start date and time
-      id: end-date
-      run: |
-          currentDate=$(echo $(date))
-          echo "Current date-${currentDate}"
-          echo "value=$currentDate">>"$GITHUB_OUTPUT"
+    # - name: start date and time
+    #   id: end-date
+    #   run: |
+    #       currentDate=$(echo $(date))
+    #       echo "Current date-${currentDate}"
+    #       echo "value=$currentDate">>"$GITHUB_OUTPUT"
 
-    - name: Experinment report
-      continue-on-error: true
-      id: conclusion
-      run: |
-        if [[ "${{ steps.experiment-state.outcome }}" == "success" ]]; then
-          exp_conclusion="Experiment completed successfully."
-        else
-          exp_conclusion="Experiment execution failed."
-        fi;
+    # - name: Experinment report
+    #   continue-on-error: true
+    #   id: conclusion
+    #   run: |
+    #     if [[ "${{ steps.experiment-state.outcome }}" == "success" ]]; then
+    #       exp_conclusion="Experiment completed successfully."
+    #     else
+    #       exp_conclusion="Experiment execution failed."
+    #     fi;
 
-         input_resource=${{ inputs.resource_type }}
-          if [[ "$input_resource" == "ec2" ]]; then
-             impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> Auto Scaling Group</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure>'
-          else
-             serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
-             impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> ECS Service</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure> '           
-          fi;        
+    #      input_resource=${{ inputs.resource_type }}
+    #       if [[ "$input_resource" == "ec2" ]]; then
+    #          impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> Auto Scaling Group</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure>'
+    #       else
+    #          serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
+    #          impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> ECS Service</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure> '           
+    #       fi;        
 
-          impactedResources="${impactedResourcesString//\"/\\\"}"          
+    #       impactedResources="${impactedResourcesString//\"/\\\"}"          
 
-          conclusionString_begin='<p>Zone failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details are as follows:</p> <figure class="table" style="width:85.84%;"><table><colgroup><col style="width:2.98%;"><col style="width:29.39%;"><col style="width:67.63%;"></colgroup> <tbody> <tr> <td>1.</td> <td><strong>Experiment scenario</strong></td> <td> CPU Stress test</td> </tr> <tr> <td>2.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>3.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ env.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>5.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ env.experiment_id }}</td> </tr> <tr> <td>6.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>7.&nbsp;</td> <td colspan="2"><strong>AWS resource states observed</strong>'
+    #       conclusionString_begin='<p>Zone failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details are as follows:</p> <figure class="table" style="width:85.84%;"><table><colgroup><col style="width:2.98%;"><col style="width:29.39%;"><col style="width:67.63%;"></colgroup> <tbody> <tr> <td>1.</td> <td><strong>Experiment scenario</strong></td> <td> CPU Stress test</td> </tr> <tr> <td>2.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>3.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ env.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>5.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ env.experiment_id }}</td> </tr> <tr> <td>6.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>7.&nbsp;</td> <td colspan="2"><strong>AWS resource states observed</strong>'
           
-          conclusionString_end="</td> </tr> <tr> <td>8.</td> <td><strong>Current state of experiment</strong></td> <td>${{ steps.experiment-state.outputs.value }}</td> </tr> <tr> <td>9.</td><td><strong>Conclusion</strong></td> <td>${exp_conclusion}</td> </tr> </tbody> </table></figure>"
+    #       conclusionString_end="</td> </tr> <tr> <td>8.</td> <td><strong>Current state of experiment</strong></td> <td>${{ steps.experiment-state.outputs.value }}</td> </tr> <tr> <td>9.</td><td><strong>Conclusion</strong></td> <td>${exp_conclusion}</td> </tr> </tbody> </table></figure>"
 
-          conclusion="${conclusionString_begin//\"/\\\"}"
-          conclusion+=$impactedResources
-          conclusion+=$conclusionString_end
+    #       conclusion="${conclusionString_begin//\"/\\\"}"
+    #       conclusion+=$impactedResources
+    #       conclusion+=$conclusionString_end
 
-          echo "value=$conclusion">>"$GITHUB_OUTPUT"
+    #       echo "value=$conclusion">>"$GITHUB_OUTPUT"
 
