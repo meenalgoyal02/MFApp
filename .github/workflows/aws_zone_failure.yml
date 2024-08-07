@@ -54,7 +54,7 @@ jobs:
         #if [[ "$input_resource" == "ec2" ]]; then
             value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
             capacity_update=false
-            while[[ $value<$DESIRED_CAPACITY ]]; do
+            while[ $value<$DESIRED_CAPACITY ]; do
                if [ "$capacity_update" = false ]; then
                   aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity ${DESIRED_CAPACITY} --min-size ${MIN_CAPACITY} --max-size ${MAX_CAPACITY} --region $AWS_REGION
                   capacity_update=true
