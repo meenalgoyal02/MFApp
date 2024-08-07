@@ -129,7 +129,7 @@ runs:
           alb_arn="${{ inputs.additional-help-parameter }}"
           echo "ALB- arn:$alb_arn"
 
-          if [-z "$alb_arn"]; then
+          if [ -z "$alb_arn" ]; then
                 echo "Enough inputs not supplied. Input parameter name -additional-help-parameter"
           fi;
         else
