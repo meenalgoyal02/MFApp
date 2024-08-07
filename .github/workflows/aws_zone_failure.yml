@@ -112,7 +112,7 @@ jobs:
 
     - name: Verify the target-group-arn
       run: |
-       targetGroupId= ${{ steps.get-tg-arn.outputs.resource-id }}
+       targetGroupId=${{ steps.get-tg-arn.outputs.resource-id }}
        echo "Output value for tg arn- ${targetGroupId}"
       
        # Step2: For this target group, retrieve the list of all the running subnets and their respective states.
