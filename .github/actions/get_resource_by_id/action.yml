@@ -27,6 +27,10 @@ inputs:
         description: 'Resource tag value. In case of ecs cluster/service, it is mandatory'
         required: false
         default: ''
+  return-value-type:
+      description: 'What return type of value is required, in case of ALB- it could be ARN/DNS'
+      required: false
+      default: 'ARN'  
 outputs:
   resource-id:
     description: 'Resource id'    
