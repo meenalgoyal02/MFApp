@@ -111,7 +111,9 @@ jobs:
        echo "Output value for tg arn- ${targetGroupId}"
       
        # Step2: For this target group, retrieve the list of all the running subnets and their respective states.
+       health_state=$(aws elbv2 describe-target-health --target-group-arn $targetGroupId --query TargetHealthDescriptions[*].TargetHealth.State --region $AWS_REGION --output text)
       
+       echo "Health states-$health_state"
        
 
 
