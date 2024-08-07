@@ -79,8 +79,12 @@ runs:
                 echo "DNS name by tag name:-$resource_id"
               fi;
           else
-              dns_name=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
-              echo "DNS name by ALB name:-$dns_name"
+              if [ "${{ inputs.return-value-type }}" == 'ARN' ]; then 
+                 resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }} --query 'LoadBalancers[*].LoadBalancerArn'  --output text)           
+             else
+                  resource_id=$(aws elbv2 describe-load-balancers --names ${{ inputs.resource-name }} --region ${{ inputs.aws-region }}| jq -r '.LoadBalancers[0].DNSName')
+             fi;
+              echo "Resource Id name by ALB name:-$resource_id"
           fi;
           echo "resource-id=$resource_id">> "$GITHUB_OUTPUT" 
         elif [ "$resourceType" == 'ecs-cluster' ]; then         
