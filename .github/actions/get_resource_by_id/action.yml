@@ -73,6 +73,7 @@ runs:
               # Step 3: Retrieve the DNS name of the load balancer
               if [ "${{ inputs.return-value-type }}" == 'ARN' ]; then 
                  resource_id="$load_balancer_arn"
+                 echo "ALB ARN:-$resource_id"
               else
                 resource_id=$(aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer_arn" --query 'LoadBalancers[0].DNSName' --region ${{ inputs.aws-region }} --output text)
                 echo "DNS name by tag name:-$resource_id"
