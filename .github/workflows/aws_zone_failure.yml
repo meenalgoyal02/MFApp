@@ -105,10 +105,16 @@ jobs:
         additional-help-parameter : ${{ steps.get-alb-arn.outputs.resource-id }}  
 
 
-    # - name: Verify the target-group-arn
-    #   run: |
-    #    targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
-    #    echo "Output value for tg arn- ${targetGroupId}"
+    - name: Verify the target-group-arn
+      run: |
+       targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
+       echo "Output value for tg arn- ${targetGroupId}"
+      
+       # Step2: For this target group, retrieve the list of all the running subnets and their respective states.
+      
+       
+
+
 
     # - name: Verify whether the URL up
     #   continue-on-error: true
