@@ -95,7 +95,7 @@ jobs:
 
     - name: Find the ARN of target group
       #continue-on-error: true
-      id: disaster-in-primary-region
+      id: get-tg-arn
       if: ${{ steps.get-alb-arn.outputs.resource-id !='' }} 
       uses: ./.github/actions/get_resource_by_id
       with:
@@ -112,7 +112,7 @@ jobs:
 
     - name: Verify the target-group-arn
       run: |
-       targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
+       targetGroupId= ${{ steps.get-tg-arn.outputs.resource-id }}
        echo "Output value for tg arn- ${targetGroupId}"
       
        # Step2: For this target group, retrieve the list of all the running subnets and their respective states.
@@ -156,20 +156,6 @@ jobs:
           state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
           echo "Current state: $state"
 
-          #check current URL status
-          app_availability=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-                zone_failure=true
-                echo "URL-${env.CNAME} is not available to respond."
-                echo "::set-output name=zone_failure::true"
-           else
-                app_recovered=true
-                echo "URL-${env.CNAME} is not available to respond."
-                echo "::set-output name=app_recovered::true"
-          fi;
-          if [[ $zone_failure && app_recovered ]]; then
-             #stop experiment
-          fi;
           sleep 10
         done
         echo "Experiment completed with state: $state"
@@ -177,7 +163,7 @@ jobs:
 
     - name: Observe current instance desired capacity
       id: asg-desired-capacity-after-experiment-run  
-      continue-on-error: true     
+     #continue-on-error: true     
       run: |
         input_resource=${{ inputs.resource_type }}
         #if [[ "$input_resource" == "ec2" ]]; then           
@@ -193,31 +179,31 @@ jobs:
         echo "$value"
         echo "value=$value">>"$GITHUB_OUTPUT"
         
-    - name: Verify the target-group-arn
-      run: |
-        targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
-        echo "Output value for tg arn- ${targetGroupId}"
+    # - name: Verify the target-group-arn
+    #   run: |
+    #     targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
+    #     echo "Output value for tg arn- ${targetGroupId}"
       
-        # Step2: For this target group, retrieve the list of all the running subnets and their respective states.
-        health_state=$(aws elbv2 describe-target-health --target-group-arn $targetGroupId --query TargetHealthDescriptions[*].TargetHealth.State --region $AWS_REGION --output text)
+    #     # Step2: For this target group, retrieve the list of all the running subnets and their respective states.
+    #     health_state=$(aws elbv2 describe-target-health --target-group-arn $targetGroupId --query TargetHealthDescriptions[*].TargetHealth.State --region $AWS_REGION --output text)
       
-        echo "Health states-$health_state"
+    #     echo "Health states-$health_state"
      
-    - name: Verify whether the URL up
-      id: app-url-verify
-      #continue-on-error: true
-      #if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
-      run: |
-              HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+    # - name: Verify whether the URL up
+    #   id: app-url-verify
+    #   #continue-on-error: true
+    #   #if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
+    #   run: |
+    #           HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
 
-              if [ "$HTTP_STATUS" -eq 200 ]; then
-                echo "URL-${env.CNAME} is up."
-                echo "::set-output name=value::true"
+    #           if [ "$HTTP_STATUS" -eq 200 ]; then
+    #             echo "URL-${env.CNAME} is up."
+    #             echo "::set-output name=value::true"
                 
-              else
-                echo "URL-${env.CNAME} is up. Can not proceed with the workflow run further."
-                echo "::set-output name=value::false"
-              fi;
+    #           else
+    #             echo "URL-${env.CNAME} is up. Can not proceed with the workflow run further."
+    #             echo "::set-output name=value::false"
+    #           fi;
     # - name: start date and time
     #   id: end-date
     #   run: |
