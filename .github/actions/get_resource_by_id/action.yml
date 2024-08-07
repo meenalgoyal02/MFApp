@@ -132,7 +132,7 @@ runs:
           if [ -z "$alb_arn" ]; then
                 echo "Enough inputs not supplied. Input parameter name -additional-help-parameter"
           else                         
-            resource_id=$(aws elbv2 describe-target-groups --load-balancer-arn $alb_arn --region ${{ inputs.aws-region }} --query 'TargetGroups[?TargetGroupName==\`${{ inputs.resource-name }}\`].TargetGroupArn' --output text)
+            resource_id=$(aws elbv2 describe-target-groups --load-balancer-arn $alb_arn --region ${{ inputs.aws-region }} --query TargetGroups[?TargetGroupName==\`${{ inputs.resource-name }}\`].TargetGroupArn --output text)
           fi;
         else
           if [ -z "${{ inputs.resource-name }}" ]; then
