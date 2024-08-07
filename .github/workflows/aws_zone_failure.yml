@@ -86,7 +86,7 @@ jobs:
         resource-name: ''  # Get from environment             
         resource-tag-name: ${{ env.TAG_KEY }}              
         resource-tag-value: ${{ env.TAG_VALUE }}
-        return-value-type: 'ARN'
+        #return-value-type: 'ARN'
 
     # - name: Find the ARN of target group
     #   #continue-on-error: true
