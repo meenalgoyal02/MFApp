@@ -54,7 +54,11 @@ jobs:
         #if [[ "$input_resource" == "ec2" ]]; then
             value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
             capacity_update=false
+            i=1
             while [ $value -lt $DESIRED_CAPACITY ]; do
+              if(($i>10)); then
+                break;
+              fi;
                if [ "$capacity_update" = false ]; then
                   aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity ${DESIRED_CAPACITY} --min-size ${MIN_CAPACITY} --max-size ${MAX_CAPACITY} --region $AWS_REGION
                   capacity_update=true
@@ -63,6 +67,7 @@ jobs:
                   sleep 30;
                   value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
                   echo "Inside loop else block. ASG current capacity- ${value}"
+                  i=$((i + 1))
                 fi;
             done;
         # else
@@ -114,85 +119,105 @@ jobs:
        health_state=$(aws elbv2 describe-target-health --target-group-arn $targetGroupId --query TargetHealthDescriptions[*].TargetHealth.State --region $AWS_REGION --output text)
       
        echo "Health states-$health_state"
-       
+   
+    - name: Verify whether the URL up
+      id: app-url-up
+      #continue-on-error: true
+      #if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
+      run: |
+              HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
 
-
-
-    # - name: Verify whether the URL up
-    #   continue-on-error: true
-    #   #if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
-    #   id: verify-region-is-up
-    #   run: |
-    #           HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-
-    #           if [ "$HTTP_STATUS" -eq 200 ]; then
-    #             echo "URL-${env.CNAME} is up."
-    #             echo "::set-output name=value::true"
+              if [ "$HTTP_STATUS" -eq 200 ]; then
+                echo "URL-${env.CNAME} is up."
+                echo "::set-output name=value::true"
                 
-    #           else
-    #             echo "Region down could not be completed."
-    #             echo "::set-output name=value::false"
-                
-    #           fi;
+              else
+                echo "URL-${env.CNAME} is up. Can not proceed with the workflow run further."
+                echo "::set-output name=value::false"
+              fi;
     
-    # - name: Start FIS experiment
-    #   continue-on-error: true
-    #   if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
-    #   id: start_experiment
-    #   run: |
-    #     experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
-    #     echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
-    #     echo "Experiment started with ID: $experiment_id"
+    - name: Start FIS experiment
+      #continue-on-error: true
+      #if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
+      id: start_experiment
+      run: |
+        experiment_id=$(aws fis start-experiment --region $AWS_REGION --experiment-template-id ${{ env.EXPERIMENT_TEMPLATE_ID }} --query 'experiment.id' --output text)
+        echo "experiment_id=${experiment_id}" >> $GITHUB_ENV
+        echo "Experiment started with ID: $experiment_id"
 
-    # - name: Monitor FIS experiment
-    #   continue-on-error: true
-    #   if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
-    #   id: experiment-state
-    #   run: |
-    #     state="running"
+    - name: Monitor FIS experiment
+      continue-on-error: true
+      if: ${{ steps.asg-desired-capacity-before-experiment-run.outcome == 'success' }}
+      id: experiment-state
+      run: |
+        state="running"
 
-    #     while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
-    #       state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
-    #       echo "Current state: $state"
+        while [[ "$state" == *running* ||   "$state" == *initiating* ]]; do        
+          state=$(aws fis get-experiment --region $AWS_REGION --id ${{ env.experiment_id }} --query 'experiment.state' --output text)
+          echo "Current state: $state"
 
-    #       #check current URL status
-    #       app_availability=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
-    #       if [ "$HTTP_STATUS" -ne 200 ]; then
-    #             zone_failure=true
-    #             echo "URL-${env.CNAME} is not available to respond."
-    #             echo "::set-output name=zone_failure::true"
-    #        else
-    #             app_recovered=true
-    #             echo "URL-${env.CNAME} is not available to respond."
-    #             echo "::set-output name=app_recovered::true"
-    #       fi;
-    #       if [[ $zone_failure && app_recovered ]]; then
-    #          #stop experiment
-    #       fi;
-    #       sleep 10
-    #     done
-    #     echo "Experiment completed with state: $state"
-    #     echo "value=$state">>"$GITHUB_OUTPUT"
+          #check current URL status
+          app_availability=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+                zone_failure=true
+                echo "URL-${env.CNAME} is not available to respond."
+                echo "::set-output name=zone_failure::true"
+           else
+                app_recovered=true
+                echo "URL-${env.CNAME} is not available to respond."
+                echo "::set-output name=app_recovered::true"
+          fi;
+          if [[ $zone_failure && app_recovered ]]; then
+             #stop experiment
+          fi;
+          sleep 10
+        done
+        echo "Experiment completed with state: $state"
+        echo "value=$state">>"$GITHUB_OUTPUT"
 
-    # - name: update current instance desired capacity
-    #   id: asg-desired-capacity-after-experiment-run  
-    #   continue-on-error: true     
-    #   run: |
-    #     input_resource=${{ inputs.resource_type }}
-    #     if [[ "$input_resource" == "ec2" ]]; then
-    #         aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --desired-capacity ${DESIRED_CAPACITY} --min-size ${MIN_CAPACITY} --max-size ${MAX_CAPACITY} --region $AWS_REGION   
+    - name: Observe current instance desired capacity
+      id: asg-desired-capacity-after-experiment-run  
+      continue-on-error: true     
+      run: |
+        input_resource=${{ inputs.resource_type }}
+        #if [[ "$input_resource" == "ec2" ]]; then           
 
-    #         value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
+            value=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME  --query AutoScalingGroups[*].DesiredCapacity --output text)
             
         # else
         #     clusterId=${{ steps.get-ecs-cluster-by-tag-name.outputs.resource-id }}
         #     serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
         #     echo "ECS service id-$serviceId"           
         #     value=$(aws ecs describe-services --cluster $clusterId --service $serviceId --region $AWS_REGION --query services[*].deployments[*].desiredCount --output text)            
-    #     fi;
-    #     echo "$value"
-    #     echo "value=$value">>"$GITHUB_OUTPUT"
+        # fi;
+        echo "$value"
+        echo "value=$value">>"$GITHUB_OUTPUT"
+        
+    - name: Verify the target-group-arn
+      run: |
+        targetGroupId= ${{ steps.disaster-in-primary-region.outputs.resource-id }}
+        echo "Output value for tg arn- ${targetGroupId}"
+      
+        # Step2: For this target group, retrieve the list of all the running subnets and their respective states.
+        health_state=$(aws elbv2 describe-target-health --target-group-arn $targetGroupId --query TargetHealthDescriptions[*].TargetHealth.State --region $AWS_REGION --output text)
+      
+        echo "Health states-$health_state"
+     
+    - name: Verify whether the URL up
+      id: app-url-verify
+      #continue-on-error: true
+      #if: ${{ steps.disaster-in-primary-region.outcome == 'success' }}
+      run: |
+              HTTP_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" "${{ env.CNAME }}")
 
+              if [ "$HTTP_STATUS" -eq 200 ]; then
+                echo "URL-${env.CNAME} is up."
+                echo "::set-output name=value::true"
+                
+              else
+                echo "URL-${env.CNAME} is up. Can not proceed with the workflow run further."
+                echo "::set-output name=value::false"
+              fi;
     # - name: start date and time
     #   id: end-date
     #   run: |
