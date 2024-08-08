@@ -1,9 +1,16 @@
 name: Run AWS Zone failure experiment
+on:
+  workflow_call:
+    secrets:    
+      AWS_ACCESS_KEY_ID:
+            required: true              
+      AWS_SECRET_ACCESS_KEY:
+                required: true
+    outputs: 
+          conclusion:
+            description: "Conclusion text that can be sent for notification"             
+            value: ${{ jobs.run-fis-experiment.outputs.conclusion }}   
 
-on: push
-env:
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
        
 jobs:
   run-fis-experiment:
@@ -250,7 +257,7 @@ jobs:
 
          input_resource=${{ inputs.resource_type }}
           #if [[ "$input_resource" == "ec2" ]]; then
-             impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> Target Group</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of Healthy Instances running before execution</span></div> </div> </td> <td>${{ steps.target-group-status-post-run.outputs.healthy_instances }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of Healthy Instances running post execution</span></td> <td>${{ steps.target-group-status-pre-run.outputs.healthy_instances }}</td> </tr> </tbody> </table> </figure>'
+             impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td>Target Group</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of Healthy Instances running before execution</span></div> </div> </td> <td>${{ steps.target-group-status-post-run.outputs.healthy_instances }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of Healthy Instances running post execution</span></td> <td>${{ steps.target-group-status-pre-run.outputs.healthy_instances }}</td> </tr> </tbody> </table> </figure>'
           # else
           #    serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
           #    impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> ECS Service</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure> '           
