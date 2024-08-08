@@ -197,7 +197,7 @@ jobs:
         # Step2: For this target group, retrieve the list of all the running subnets and their respective states.
         health_state=$(aws elbv2 describe-target-health --target-group-arn $targetGroupId --query TargetHealthDescriptions[*].TargetHealth.State --region $AWS_REGION --output text)
       
-        #echo "Health states-$health_state"
+        echo "Health states-$health_state"
         #Step3: Iterate over the list and find the number of healthy instances
         healthy_instance_count=0
         for instanceState in $health_state; do
@@ -225,12 +225,12 @@ jobs:
     #             echo "URL-${env.CNAME} is up. Can not proceed with the workflow run further."
     #             echo "::set-output name=value::false"
     #           fi;
-    # - name: start date and time
-    #   id: end-date
-    #   run: |
-    #       currentDate=$(echo $(date))
-    #       echo "Current date-${currentDate}"
-    #       echo "value=$currentDate">>"$GITHUB_OUTPUT"
+    - name: end date and time
+      id: end-date
+      run: |
+          currentDate=$(echo $(date))
+          echo "Current date-${currentDate}"
+          echo "value=$currentDate">>"$GITHUB_OUTPUT"
 
     # - name: Experinment report
     #   continue-on-error: true
