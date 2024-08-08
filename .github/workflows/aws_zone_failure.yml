@@ -111,6 +111,7 @@ jobs:
 
 
     - name: Verify the target-group-arn
+      id: target-group-status-pre-run
       run: |
        targetGroupId=${{ steps.get-tg-arn.outputs.resource-id }}
        echo "Output value for tg arn- ${targetGroupId}"
@@ -130,6 +131,9 @@ jobs:
        done
         echo "Number of healthy instances- ${healthy_instance_count}"
         echo "Number of other state instances- ${other_state}"
+        echo "healthy_instances=$healthy_instance_count">>"$GITHUB_OUTPUT"
+        echo "other_instances=$other_state">>"$GITHUB_OUTPUT"
+
     - name: Verify whether the URL up
       id: app-url-up
       #continue-on-error: true
@@ -190,6 +194,7 @@ jobs:
         echo "value=$value">>"$GITHUB_OUTPUT"
         
     - name: Verify the target-group-arn
+      id: target-group-status-post-run
       run: |
         targetGroupId=${{ steps.get-tg-arn.outputs.resource-id }}
         echo "Output value for tg arn- ${targetGroupId}"
@@ -209,6 +214,8 @@ jobs:
         done
         echo "Number of healthy instances- ${healthy_instance_count}"
         echo "Number of other state instances- ${other_state}"
+        echo "healthy_instances=$healthy_instance_count">>"$GITHUB_OUTPUT"
+        echo "other_instances=$other_state">>"$GITHUB_OUTPUT"
      
     # - name: Verify whether the URL up
     #   id: app-url-verify
@@ -232,33 +239,33 @@ jobs:
           echo "Current date-${currentDate}"
           echo "value=$currentDate">>"$GITHUB_OUTPUT"
 
-    # - name: Experinment report
-    #   continue-on-error: true
-    #   id: conclusion
-    #   run: |
-    #     if [[ "${{ steps.experiment-state.outcome }}" == "success" ]]; then
-    #       exp_conclusion="Experiment completed successfully."
-    #     else
-    #       exp_conclusion="Experiment execution failed."
-    #     fi;
+    - name: Experinment report
+      continue-on-error: true
+      id: conclusion
+      run: |
+        if [[ "${{ steps.experiment-state.outcome }}" == "success" ]]; then
+          exp_conclusion="Experiment completed successfully."
+        else
+          exp_conclusion="Experiment execution failed."
+        fi;
 
-    #      input_resource=${{ inputs.resource_type }}
-    #       if [[ "$input_resource" == "ec2" ]]; then
-    #          impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> Auto Scaling Group</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure>'
-    #       else
-    #          serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
-    #          impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> ECS Service</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure> '           
-    #       fi;        
+         input_resource=${{ inputs.resource_type }}
+          #if [[ "$input_resource" == "ec2" ]]; then
+             impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> Target Group</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of Healthy Instances running before execution</span></div> </div> </td> <td>${{ steps.target-group-status-post-run.outputs.healthy_instances }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of Healthy Instances running post execution</span></td> <td>${{ steps.target-group-status-pre-run.outputs.healthy_instances }}</td> </tr> </tbody> </table> </figure>'
+          # else
+          #    serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
+          #    impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> <col style="width:4.75%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> ECS Service</td></tr> <tr> <td> <div> <div><span style="color:#0000ff;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#0000ff;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure> '           
+          # fi;        
 
-    #       impactedResources="${impactedResourcesString//\"/\\\"}"          
+          impactedResources="${impactedResourcesString//\"/\\\"}"          
 
-    #       conclusionString_begin='<p>Zone failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details are as follows:</p> <figure class="table" style="width:85.84%;"><table><colgroup><col style="width:2.98%;"><col style="width:29.39%;"><col style="width:67.63%;"></colgroup> <tbody> <tr> <td>1.</td> <td><strong>Experiment scenario</strong></td> <td> CPU Stress test</td> </tr> <tr> <td>2.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>3.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ env.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>5.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ env.experiment_id }}</td> </tr> <tr> <td>6.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>7.&nbsp;</td> <td colspan="2"><strong>AWS resource states observed</strong>'
+          conclusionString_begin='<p>Zone failure experiment completed</p><p>&nbsp; &nbsp;&nbsp Details are as follows:</p> <figure class="table" style="width:85.84%;"><table><colgroup><col style="width:2.98%;"><col style="width:29.39%;"><col style="width:67.63%;"></colgroup> <tbody> <tr> <td>1.</td> <td><strong>Experiment scenario</strong></td> <td> CPU Stress test</td> </tr> <tr> <td>2.</td> <td><strong>Experiment start time</strong></td> <td>${{ steps.start-date.outputs.value }}</td> </tr> <tr> <td>3.</td> <td><strong>Experiment end time</strong></td> <td>${{ steps.end-date.outputs.value }}</td> </tr> <tr> <td>4.&nbsp;</td> <td><strong>Experiment template id</strong></td> <td>${{ env.EXPERIMENT_TEMPLATE_ID }}</td> </tr> <tr> <td>5.&nbsp;</td> <td><strong>Experiment id</strong></td> <td>${{ env.experiment_id }}</td> </tr> <tr> <td>6.</td> <td><strong>AWS Region name</strong></td> <td>${{ env.AWS_REGION }}</td> </tr> <tr> <td>7.&nbsp;</td> <td colspan="2"><strong>AWS resource states observed</strong>'
           
-    #       conclusionString_end="</td> </tr> <tr> <td>8.</td> <td><strong>Current state of experiment</strong></td> <td>${{ steps.experiment-state.outputs.value }}</td> </tr> <tr> <td>9.</td><td><strong>Conclusion</strong></td> <td>${exp_conclusion}</td> </tr> </tbody> </table></figure>"
+          conclusionString_end="</td> </tr> <tr> <td>8.</td> <td><strong>Current state of experiment</strong></td> <td>${{ steps.experiment-state.outputs.value }}</td> </tr> <tr> <td>9.</td><td><strong>Conclusion</strong></td> <td>${exp_conclusion}</td> </tr> </tbody> </table></figure>"
 
-    #       conclusion="${conclusionString_begin//\"/\\\"}"
-    #       conclusion+=$impactedResources
-    #       conclusion+=$conclusionString_end
+          conclusion="${conclusionString_begin//\"/\\\"}"
+          conclusion+=$impactedResources
+          conclusion+=$conclusionString_end
 
-    #       echo "value=$conclusion">>"$GITHUB_OUTPUT"
+          echo "value=$conclusion">>"$GITHUB_OUTPUT"
 
