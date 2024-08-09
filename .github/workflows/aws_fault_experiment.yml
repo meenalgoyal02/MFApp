@@ -173,8 +173,7 @@ jobs:
          input_resource=${{ inputs.resource_type }}
           if [[ "$input_resource" == "ec2" ]]; then
              impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"></colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> Auto Scaling Group</td></tr> <tr> <td> <div> <div><span style="color:#546e7a;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#546e7a;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure>'
-          else
-             serviceId=${{ steps.get-ecs-service-id.outputs.resource-id }}
+          else             
              impactedResourcesString='<figure class="table" style="width:100.2%;"> <table class="ck-table-resized"> <colgroup> <col style="width:39.82%;"> <col style="width:55.43%;"> </colgroup> <tbody> <tr> <td><strong>Resource type</strong></td> <td> ECS Service</td></tr> <tr> <td> <div> <div><span style="color:#546e7a;">Number of running instances before execution</span></div> </div> </td> <td>${{ steps.asg-desired-capacity-before-experiment-run.outputs.value }}</td> </tr> <tr> <td><span style="color:#546e7a;">Number of running instances after execution</span></td> <td>${{ steps.asg-desired-capacity-after-experiment-run.outputs.value }}</td> </tr> </tbody> </table> </figure> '           
           fi;        
 
