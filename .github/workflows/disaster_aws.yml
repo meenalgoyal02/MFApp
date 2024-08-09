@@ -74,7 +74,8 @@ jobs:
             resource-type: 'ALB'               
             resource-name: ''  # Get from environment             
             resource-tag-name: ${{ env.TAG_KEY }}              
-            resource-tag-value: ${{ env.TAG_VALUE }}   
+            resource-tag-value: ${{ env.TAG_VALUE }}
+            return-value-type: 'DNS'   
                     
         - name: Retrieve id of hosted-zone 
           continue-on-error: true

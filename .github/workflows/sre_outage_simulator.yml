@@ -9,6 +9,7 @@ on:
           type: choice
           options:
             - region-failure
+            - zone-failover
             - system-failover
         deployment-type:
             description: 'Select the deployment type for the action'
@@ -42,7 +43,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}          
- 
   run-experiment:
     if: ${{github.event.inputs.outage-type=='system-failover'}}
     uses: ./.github/workflows/aws_fault_experiment.yml
@@ -51,9 +51,18 @@ jobs:
     secrets:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}   
+     
+ 
+  run-zone-failover:
+    if: ${{github.event.inputs.outage-type=='zone-failover'}}
+    uses: ./.github/workflows/aws_zone_failure.yml
+    secrets:
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      
 
   send-disaster-simulation-notification:
-    needs: [run-region-failover, run-recovery-scripts, run-experiment]
+    needs: [run-region-failover, run-recovery-scripts, run-experiment, run-zone-failover]
     if: |
       always()
       && contains(needs.*.result, 'success')
@@ -64,12 +73,14 @@ jobs:
         continue-on-error: true
         id: notification-email-content        
         run: |
-          echo "Email content- ${{ needs.run-experiment.outputs.conclusion }}"
+          
           content="<html><body><head><style>table, th, td { border: 1px solid black;border-collapse: collapse; vertical-align:top; padding-left: 15px;padding-right: 15px;}</style> </head>"
           if [[ "${{ github.event.inputs.outage-type }}" == "region-failure" ]]; then             
             content+="${{ needs.run-region-failover.outputs.conclusion }}"
             content+="<br/>"
             content+="${{ needs.run-recovery-scripts.outputs.conclusion }}"
+          elif [[ "${{ github.event.inputs.outage-type }}" == "zone-failover" ]]; then             
+            content+="${{ needs.run-zone-failover.outputs.conclusion }}" 
           else 
             content+="${{ needs.run-experiment.outputs.conclusion }}"
           fi;
